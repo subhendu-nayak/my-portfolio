@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>OIFMS 3.0 — Innovation Portal</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    html, body, #root { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+/* ─── DESIGN TOKENS ─────────────────────────────── */
+const C = {
+  s50:"#F0F9FF",s100:"#E0F2FE",s200:"#BAE6FD",s300:"#7DD3FC",
+  s400:"#38BDF8",s500:"#0EA5E9",s600:"#0284C7",s700:"#0369A1",
+  s800:"#075985",s900:"#0C4A6E",
+  bg:"#F0F9FF",white:"#fff",ink:"#0C1B2E",ink2:"#1E3A52",
+  ink3:"#4A6B82",ink4:"#8AAEC4",border:"#E0F2FE",
+  green:"#10B981",red:"#EF4444",amber:"#F59E0B",purple:"#818CF8",
+};
+
+/* ─── SVG ICON SYSTEM ────────────────────────────── */
+const I = ({ n, s=16, col="white", sw=2 }) => {
+  const paths = {
+    chat:<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>,
+    shield:<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>,
+    activity:<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>,
+    mic:<><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></>,
+    cpu:<><rect x="7" y="7" width="10" height="10" rx="1"/><path d="M16 3v2M8 3v2M3 8h2M3 16h2M21 8h-2M21 16h-2M16 21v-2M8 21v-2"/></>,
+    bar:<><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></>,
+    trend:<><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></>,
+    globe:<><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></>,
+    doc:<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></>,
+    bell:<><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3z"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></>,
+    user:<><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>,
+    check:<polyline points="20 6 9 17 4 12"/>,
+    pin:<><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></>,
+    money:<><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></>,
+    phone:<><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="17" r="1"/></>,
+    layers:<><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></>,
+    lock:<><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>,
+    eye:<><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>,
+    refresh:<><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></>,
+    send:<><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></>,
+    grid:<><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></>,
+    book:<><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></>,
+    link:<><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></>,
+    clock:<><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>,
+    search:<><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></>,
+    flow:<><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></>,
+    star:<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>,
+    menu:<><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>,
+    x:<><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
+    download:<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></>,
+    wifi:<><path d="M1 6s4-4 11-4 11 4 11 4"/><path d="M5 10s2.5-2.5 7-2.5 7 2.5 7 2.5"/><path d="M9 14s1-1 3-1 3 1 3 1"/><line x1="12" y1="18" x2="12.01" y2="18"/></>,
+    block:<><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></>,
+    warning:<><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></>,
+    info:<><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>,
+    play:<polygon points="5 3 19 12 5 21 5 3"/>,
+    settings:<><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></>,
+  };
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={col} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
+      {paths[n] || paths.info}
+    </svg>
+  );
+};
+
+/* ─── SHARED COMPONENTS ──────────────────────────── */
+const Btn = ({ children, variant="primary", sm, onClick, disabled, style={} }) => {
+  const base = { display:"inline-flex", alignItems:"center", gap:7, fontFamily:"Roboto,sans-serif", fontWeight:600, border:"none", cursor: disabled?"not-allowed":"pointer", borderRadius:30, transition:"all .2s", fontSize:sm?12:13, padding:sm?"7px 14px":"10px 20px", opacity:disabled?.5:1, ...style };
+  const variants = {
+    primary:{ background:`linear-gradient(135deg,${C.s700},${C.s500})`, color:"white", boxShadow:`0 3px 12px rgba(14,165,233,.3)` },
+    secondary:{ background:C.s50, color:C.s700, border:`1.5px solid ${C.s200}` },
+    danger:{ background:`linear-gradient(135deg,#DC2626,${C.red})`, color:"white" },
+    success:{ background:`linear-gradient(135deg,#059669,${C.green})`, color:"white" },
+    ghost:{ background:"transparent", color:C.s700, border:`1.5px solid ${C.s300}` },
+  };
+  return <button style={{...base,...variants[variant]}} onClick={disabled?null:onClick} disabled={disabled}>{children}</button>;
+};
+
+const Card = ({ children, style={} }) => (
+  <div style={{ background:C.white, borderRadius:16, border:`1px solid ${C.border}`, boxShadow:`0 2px 12px rgba(14,165,233,.06)`, ...style }}>{children}</div>
+);
+
+const Badge = ({ children, color="sky", style={} }) => {
+  const colors = { sky:{bg:C.s100,c:C.s700}, green:{bg:"#D1FAE5",c:"#065F46"}, red:{bg:"#FEE2E2",c:"#991B1B"}, amber:{bg:"#FEF3C7",c:"#92400E"}, purple:{bg:"#EDE9FE",c:"#5B21B6"}, white:{bg:"rgba(255,255,255,.18)",c:"white",border:"1px solid rgba(255,255,255,.3)"} };
+  const col = colors[color]||colors.sky;
+  return <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:10, fontWeight:700, letterSpacing:.8, textTransform:"uppercase", padding:"3px 9px", borderRadius:30, background:col.bg, color:col.c, border:col.border||"none", ...style }}>{children}</span>;
+};
+
+const Prog = ({ pct, color, height=6 }) => (
+  <div style={{ height, background:C.s100, borderRadius:height, overflow:"hidden" }}>
+    <div style={{ height:"100%", width:`${Math.min(pct,100)}%`, background:color||`linear-gradient(90deg,${C.s700},${C.s400})`, borderRadius:height, transition:"width .8s ease" }}/>
+  </div>
+);
+
+const IcoBox = ({ icon, size=40, br=11, grad=`linear-gradient(135deg,${C.s700},${C.s500})`, style={} }) => (
+  <div style={{ width:size, height:size, borderRadius:br, background:grad, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, ...style }}>
+    <I n={icon} s={size*.44} />
+  </div>
+);
+
+const Toggle = ({ on, onChange }) => (
+  <div onClick={onChange} style={{ width:36, height:20, borderRadius:10, cursor:"pointer", transition:"background .2s", background:on?`linear-gradient(135deg,${C.s700},${C.s500})`:C.border, position:"relative", flexShrink:0 }}>
+    <div style={{ position:"absolute", top:2, left:on?18:2, width:16, height:16, borderRadius:"50%", background:"white", transition:"left .2s", boxShadow:"0 1px 4px rgba(0,0,0,.2)" }}/>
+  </div>
+);
+
+/* ─── TOAST SYSTEM ───────────────────────────────── */
+let _addToast = null;
+const Toast = () => {
+  const [toasts, setToasts] = useState([]);
+  useEffect(() => {
+    _addToast = (msg, type="info") => {
+      const id = Date.now() + Math.random();
+      setToasts(t => [...t, { id, msg, type }]);
+      setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3500);
+    };
+  }, []);
+  const icons = { info:C.s700, success:"#059669", warning:"#D97706", error:"#DC2626" };
+  const bgs = { info:C.s100, success:"#D1FAE5", warning:"#FEF3C7", error:"#FEE2E2" };
+  return (
+    <div style={{ position:"fixed", top:70, right:16, zIndex:9999, display:"flex", flexDirection:"column", gap:8 }}>
+      {toasts.map(t => (
+        <div key={t.id} style={{ background:C.white, borderRadius:12, border:`1px solid ${C.border}`, padding:"11px 13px", display:"flex", alignItems:"center", gap:10, boxShadow:`0 6px 28px rgba(14,165,233,.14)`, minWidth:240, maxWidth:300, animation:"fadeInRight .25s ease" }}>
+          <div style={{ width:28, height:28, borderRadius:8, background:bgs[t.type], flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <I n={t.type==="success"?"check":t.type==="error"?"x":t.type==="warning"?"warning":"info"} s={14} col={icons[t.type]} sw={2.5}/>
+          </div>
+          <span style={{ fontSize:13, color:C.ink2, flex:1 }}>{t.msg}</span>
+          <button onClick={() => setToasts(ts => ts.filter(x => x.id !== t.id))} style={{ width:18, height:18, borderRadius:5, background:C.s50, border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><I n="x" s={10} col={C.ink4} sw={2.5}/></button>
+        </div>
+      ))}
+    </div>
+  );
+};
+const toast = (msg, type) => _addToast && _addToast(msg, type);
+
+/* ─── PAGE HEADER ─────────────────────────────────── */
+const PageHeader = ({ num, tag, tagIcon="cpu", title, desc, priority="critical" }) => (
+  <div style={{ padding:"24px 24px 20px", background:`linear-gradient(135deg,${C.s50},${C.white})`, borderBottom:`1px solid ${C.border}` }}>
+    <div style={{ display:"flex", alignItems:"flex-start", gap:16 }}>
+      <div style={{ width:50, height:50, borderRadius:14, background:`linear-gradient(135deg,${C.s700},${C.s500})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:`0 4px 16px rgba(14,165,233,.28)`, fontSize:18, fontWeight:900, color:"white" }}>{num}</div>
+      <div>
+        <div style={{ display:"inline-flex", alignItems:"center", gap:6, background:C.s100, color:C.s700, fontSize:9, fontWeight:700, letterSpacing:2, textTransform:"uppercase", padding:"3px 12px", borderRadius:30, marginBottom:8 }}>
+          <I n={tagIcon} s={10} col={C.s700} sw={2}/> {tag}
+        </div>
+        <h2 style={{ fontSize:"clamp(18px,3vw,26px)", fontWeight:900, color:C.ink, letterSpacing:-.5, marginBottom:6 }}>{title}</h2>
+        <p style={{ fontSize:13, color:C.ink3, lineHeight:1.7, maxWidth:600, margin:0 }}>{desc}</p>
+        <span style={{ display:"inline-flex", alignItems:"center", gap:5, fontSize:10, fontWeight:700, padding:"3px 10px", borderRadius:30, marginTop:8, background:priority==="critical"?"#FEE2E2":priority==="high"?"#FEF3C7":"#EDE9FE", color:priority==="critical"?"#991B1B":priority==="high"?"#92400E":"#5B21B6" }}>● {priority.charAt(0).toUpperCase()+priority.slice(1)} Priority</span>
+      </div>
+    </div>
+  </div>
+);
+
+/* ══════════════════════════════════════════════════════
+   P0 — COMMAND CENTER
+══════════════════════════════════════════════════════ */
+const P0 = ({ navigate }) => {
+  const [bills, setBills] = useState(1284);
+  const [pending, setPending] = useState(47);
+  const refresh = () => {
+    setBills(b => b + Math.floor(Math.random()*20));
+    setPending(p => Math.max(30, p + Math.floor(Math.random()*10)-5));
+    toast("Dashboard refreshed with live data","success");
+  };
+  const pillars = [
+    {id:"p1",n:"01",t:"AI Budget Copilot",desc:"NLP chatbot for budget queries in Odia & English",icon:"chat",grad:`linear-gradient(135deg,${C.s800},${C.s500})`,priority:"critical"},
+    {id:"p2",n:"02",t:"Design System",desc:"40+ components, WCAG 2.1 AA, token-based theming",icon:"layers",grad:`linear-gradient(135deg,${C.s700},${C.s400})`,priority:"critical"},
+    {id:"p3",n:"03",t:"Analytics Dashboard",desc:"Real-time charts with AI anomaly detection",icon:"bar",grad:`linear-gradient(135deg,${C.s600},${C.s300})`,priority:"critical"},
+    {id:"p4",n:"04",t:"Smart Workflow",desc:"AI bill routing, SLA tracking, auto-approval",icon:"flow",grad:`linear-gradient(135deg,${C.s800},${C.s600})`,priority:"high"},
+    {id:"p5",n:"05",t:"Fraud Detection",desc:"ML model, real-time risk scoring, auto-hold",icon:"shield",grad:`linear-gradient(135deg,${C.s900},${C.s700})`,priority:"critical"},
+    {id:"p6",n:"06",t:"Predictive Forecasting",desc:"Time-series AI, 89% accuracy, scenario modeling",icon:"activity",grad:`linear-gradient(135deg,${C.s600},${C.s300})`,priority:"high"},
+    {id:"p7",n:"07",t:"Role-Based UI",desc:"Adaptive interface per DDO, Treasury, Secretary",icon:"user",grad:`linear-gradient(135deg,${C.s700},${C.s500})`,priority:"high"},
+    {id:"p8",n:"08",t:"Smart OCR Engine",desc:"AI document extraction with 99.2% accuracy",icon:"doc",grad:`linear-gradient(135deg,${C.s800},${C.s500})`,priority:"critical"},
+    {id:"p9",n:"09",t:"GIS Fund Map",desc:"District-wise fund tracking on Odisha map",icon:"pin",grad:`linear-gradient(135deg,${C.s700},${C.s400})`,priority:"future"},
+    {id:"p10",n:"10",t:"Smart Notifications",desc:"Multi-channel push, SMS, WhatsApp, Email alerts",icon:"bell",grad:`linear-gradient(135deg,${C.s800},${C.s500})`,priority:"high"},
+    {id:"p11",n:"11",t:"Zero-Click Reports",desc:"AI auto-generates CAG, PAC compliance reports",icon:"download",grad:`linear-gradient(135deg,${C.s700},${C.s500})`,priority:"critical"},
+    {id:"p12",n:"12",t:"Mobile PWA",desc:"Offline-first app for tribal district officers",icon:"phone",grad:`linear-gradient(135deg,${C.s900},${C.s700})`,priority:"high"},
+    {id:"p13",n:"13",t:"Voice Navigation",desc:"Odia + English AI — India's first govt voice system",icon:"mic",grad:`linear-gradient(135deg,${C.s800},${C.s500})`,priority:"future"},
+    {id:"p14",n:"14",t:"IFMS Academy",desc:"Gamified training for 15,000+ users statewide",icon:"book",grad:`linear-gradient(135deg,${C.s700},${C.s400})`,priority:"high"},
+    {id:"p15",n:"15",t:"Open API Hub",desc:"REST API connecting PFMS, HRMS, GST, Banks",icon:"link",grad:`linear-gradient(135deg,${C.s800},${C.s500})`,priority:"future"},
+    {id:"p16",n:"16",t:"Sentiment Analytics",desc:"Heatmaps, NPS surveys, UX health scoring",icon:"eye",grad:`linear-gradient(135deg,${C.s600},${C.s400})`,priority:"high"},
+    {id:"p17",n:"17",t:"Blockchain Ledger",desc:"Immutable audit trail, CAG verification",icon:"block",grad:`linear-gradient(135deg,${C.s900},${C.s800})`,priority:"future"},
+    {id:"p18",n:"18",t:"Accessibility",desc:"WCAG 2.1 AA, screen reader, Odia localization",icon:"clock",grad:`linear-gradient(135deg,${C.s700},${C.s500})`,priority:"high"},
+  ];
+  const months = ["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+  const vals = [60,75,55,85,70,92,78,84,95,100,88,80];
+  return (
+    <div>
+      <div style={{ padding:"24px 24px 20px", background:`linear-gradient(135deg,${C.s900},${C.s700})`, color:"white" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4, flexWrap:"wrap", gap:8 }}>
+          <div>
+            <div style={{ display:"inline-flex", alignItems:"center", gap:6, background:"rgba(255,255,255,.12)", border:"1px solid rgba(255,255,255,.2)", borderRadius:30, padding:"3px 12px", fontSize:9, fontWeight:700, letterSpacing:2, textTransform:"uppercase", marginBottom:8 }}>
+              <span style={{ width:6, height:6, borderRadius:"50%", background:"#86EFAC", display:"inline-block", animation:"pulse 2s infinite" }}/>OIFMS 3.0 · Live
+            </div>
+            <h1 style={{ fontSize:"clamp(20px,3vw,30px)", fontWeight:900, color:"white", letterSpacing:-.5 }}>State Finance Command Center</h1>
+            <p style={{ fontSize:13, color:"rgba(255,255,255,.7)", marginTop:4 }}>Real-time view of Odisha's complete financial operations</p>
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <Btn sm variant="ghost" style={{ borderColor:"rgba(255,255,255,.3)", color:"white" }} onClick={refresh}><I n="refresh" s={12}/>Refresh</Btn>
+            <Btn sm onClick={()=>toast("Exporting state report...","success")}><I n="download" s={12}/>Export</Btn>
+          </div>
+        </div>
+      </div>
+      <div style={{ padding:"20px 24px" }}>
+        {/* KPIs */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:14, marginBottom:20 }}>
+          {[
+            { label:"Total Unspent Budget", val:"₹284 Cr", trend:"↑ +3.2% vs last month", up:true, icon:"money", grad:`linear-gradient(135deg,${C.s700},${C.s500})`, line:`linear-gradient(90deg,${C.s700},${C.s500})`, page:"p3" },
+            { label:"Bills Processed Today", val:bills.toLocaleString(), trend:"↑ +8% vs yesterday", up:true, icon:"check", grad:`linear-gradient(135deg,#059669,${C.green})`, line:`linear-gradient(90deg,${C.green},#34D399)`, page:"p4" },
+            { label:"Pending Approvals", val:pending, trend:"4 near SLA breach", up:false, icon:"clock", grad:`linear-gradient(135deg,#D97706,${C.amber})`, line:`linear-gradient(90deg,${C.amber},#FCD34D)`, page:"p4" },
+            { label:"Fraud Alerts Today", val:"3", trend:"● 2 Critical active", up:false, icon:"shield", grad:`linear-gradient(135deg,#DC2626,${C.red})`, line:`linear-gradient(90deg,${C.red},#F87171)`, page:"p5" },
+          ].map(k => (
+            <div key={k.label} onClick={()=>{ navigate(k.page); toast(`Opening ${k.label}`,"info"); }} style={{ background:C.white, borderRadius:14, padding:16, border:`1px solid ${C.border}`, cursor:"pointer", position:"relative", overflow:"hidden", transition:"all .25s" }}
+              onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-3px)"; e.currentTarget.style.boxShadow=`0 6px 24px rgba(14,165,233,.12)`; }}
+              onMouseLeave={e=>{ e.currentTarget.style.transform=""; e.currentTarget.style.boxShadow=""; }}>
+              <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:k.line }}/>
+              <div style={{ width:36, height:36, borderRadius:10, background:k.grad, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:10 }}><I n={k.icon} s={18}/></div>
+              <div style={{ fontSize:24, fontWeight:900, color:C.ink, lineHeight:1 }}>{k.val}</div>
+              <div style={{ fontSize:11, color:C.ink3, marginTop:3 }}>{k.label}</div>
+              <div style={{ fontSize:10, fontWeight:700, marginTop:4, color:k.up?C.green:C.red }}>{k.trend}</div>
+            </div>
+          ))}
+        </div>
+        {/* Chart */}
+        <Card style={{ padding:20, marginBottom:20 }}>
+          <div style={{ fontSize:14, fontWeight:700, color:C.ink, marginBottom:14 }}>State Expenditure FY 2025-26 <span style={{ fontSize:11, color:C.ink4, fontWeight:400 }}>— Click bars</span></div>
+          <div style={{ height:140, display:"flex", alignItems:"flex-end", gap:5 }}>
+            {months.map((m,i) => (
+              <div key={m} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, flex:1 }}>
+                <div onClick={()=>toast(`${m}: ₹${(vals[i]*.37).toFixed(1)} Cr${i>=6?" (Forecast)":""}`, "info")} style={{ width:"100%", height:`${vals[i]}%`, borderRadius:"4px 4px 0 0", background:i>=6?"linear-gradient(to top,rgba(14,165,233,.2),rgba(14,165,233,.5))":"linear-gradient(to top,#0C4A6E,#0EA5E9)", border:i>=6?`2px dashed ${C.s400}`:"none", cursor:"pointer", minHeight:4, transition:"opacity .2s" }}
+                  onMouseEnter={e=>e.currentTarget.style.opacity=".8"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}/>
+                <span style={{ fontSize:9, color:C.ink4 }}>{m}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ display:"flex", gap:16, marginTop:8 }}>
+            {[["Actual",`linear-gradient(90deg,${C.s900},${C.s500})`,false],["AI Forecast","rgba(14,165,233,.4)",true]].map(([l,bg,dash])=>(
+              <div key={l} style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:C.ink3 }}>
+                <div style={{ width:12, height:8, borderRadius:3, background:bg, border:dash?`1.5px dashed ${C.s400}`:"none" }}/>{l}
+              </div>
+            ))}
+          </div>
+        </Card>
+        {/* 18 Pillar Grid */}
+        <div style={{ fontSize:14, fontWeight:700, color:C.ink, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
+          <I n="cpu" s={16} col={C.s700} sw={2}/>18 Innovation Pillars — Click to open any module
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12 }}>
+          {pillars.map(p => (
+            <div key={p.id} onClick={()=>navigate(p.id)} style={{ background:C.white, borderRadius:14, border:`1px solid ${C.border}`, overflow:"hidden", cursor:"pointer", transition:"all .25s" }}
+              onMouseEnter={e=>{ e.currentTarget.style.borderColor=C.s300; e.currentTarget.style.boxShadow=`0 4px 20px rgba(14,165,233,.1)`; e.currentTarget.style.transform="translateY(-2px)"; }}
+              onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.boxShadow=""; e.currentTarget.style.transform=""; }}>
+              <div style={{ height:64, position:"relative", display:"flex", alignItems:"center", padding:"0 14px", gap:10, overflow:"hidden", background:p.grad }}>
+                <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle,rgba(255,255,255,.1) 1px,transparent 1px)", backgroundSize:"14px 14px" }}/>
+                <div style={{ width:38, height:38, borderRadius:10, background:"rgba(255,255,255,.2)", border:"1px solid rgba(255,255,255,.28)", display:"flex", alignItems:"center", justifyContent:"center", position:"relative", zIndex:1, flexShrink:0 }}><I n={p.icon} s={18}/></div>
+                <div style={{ position:"relative", zIndex:1 }}>
+                  <div style={{ fontSize:9, color:"rgba(255,255,255,.65)", fontWeight:700 }}>#{p.n}</div>
+                  <div style={{ fontSize:13, fontWeight:700, color:"white" }}>{p.t}</div>
+                </div>
+              </div>
+              <div style={{ padding:"10px 14px" }}>
+                <div style={{ fontSize:11, color:C.ink3, lineHeight:1.6, marginBottom:8 }}>{p.desc}</div>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                  <Badge color={p.priority==="critical"?"red":p.priority==="high"?"amber":"purple"}>{p.priority}</Badge>
+                  <span style={{ fontSize:10, fontWeight:700, color:C.s700, background:C.s50, border:`1px solid ${C.s200}`, borderRadius:30, padding:"3px 10px", cursor:"pointer" }}>Open →</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════
+   P1 — AI BUDGET COPILOT
+══════════════════════════════════════════════════════ */
+const P1 = () => {
+  const [msgs, setMsgs] = useState([{ role:"bot", text:"Namaskar! I am your IFMS Budget Copilot. Ask me about fund balances, bill status, or budget regulations — in English or Odia." }]);
+  const [input, setInput] = useState("");
+  const [typing, setTyping] = useState(false);
+  const msgsRef = useRef();
+  const replies = {
+    health:"Health & Family Welfare has **₹42.8 Cr** unspent in Q3 FY 2025-26. Budget Head 2210 shows 67% utilization. Forecast: full utilization by March at current pace.",
+    education:"Education Dept has **₹22.4 Cr** remaining — utilization at 82%, one of the best this quarter. Forecast: 96% by year-end.",
+    pending:"There are **47 pending bills** today: 12 with Treasury, 28 awaiting DDO, 7 on fraud hold. Oldest is 3 days — SLA breach risk.",
+    fraud:"**3 critical fraud alerts** active. Total at risk: ₹31.75L. Auto-hold applied on 2 bills. Review required within 4 hours.",
+    departments:"Top departments by utilization: Water Resources (91%), Education (82%), PWD (74%), Health (67%), Agriculture needs attention at 55%.",
+    default:"I found **₹284 Cr** total unspent across all departments. Water Resources leads at 91%. Agriculture at 55% needs immediate action. Shall I drill down by district?"
+  };
+  const send = (text) => {
+    const msg = text || input.trim();
+    if (!msg) return;
+    setInput("");
+    setMsgs(m => [...m, { role:"user", text:msg }]);
+    setTyping(true);
+    setTimeout(() => {
+      const ml = msg.toLowerCase();
+      const key = ml.includes("health")?"health":ml.includes("edu")?"education":ml.includes("pend")?"pending":ml.includes("fraud")||ml.includes("alert")?"fraud":ml.includes("top")||ml.includes("dept")?"departments":"default";
+      setMsgs(m => [...m, { role:"bot", text:replies[key] }]);
+      setTyping(false);
+    }, 1200);
+  };
+  useEffect(() => { if (msgsRef.current) msgsRef.current.scrollTop = msgsRef.current.scrollHeight; }, [msgs, typing]);
+  const renderText = (t) => t.split(/\*\*(.*?)\*\*/g).map((s,i) => i%2===1 ? <strong key={i} style={{ color:C.s700 }}>{s}</strong> : s);
+  return (
+    <div>
+      <PageHeader num="01" tag="AI Module · Q1 2025" tagIcon="cpu" title="AI-Powered Budget Copilot" desc="Conversational AI answering budget queries in Odia & English. Type below or click suggestion chips to see live AI responses." priority="critical"/>
+      <div style={{ padding:20 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 240px", gap:14, height:460 }}>
+          {/* Chat */}
+          <div style={{ display:"flex", flexDirection:"column", borderRadius:14, overflow:"hidden", border:`1px solid ${C.border}`, boxShadow:`0 3px 14px rgba(14,165,233,.08)` }}>
+            <div style={{ background:`linear-gradient(135deg,${C.s800},${C.s500})`, padding:"12px 15px", display:"flex", alignItems:"center", gap:10 }}>
+              <div style={{ width:34, height:34, borderRadius:"50%", background:"rgba(255,255,255,.2)", border:"2px solid rgba(255,255,255,.28)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><I n="cpu" s={15}/></div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:13, fontWeight:700, color:"white" }}>IFMS Budget Copilot</div>
+                <div style={{ fontSize:10, color:"rgba(255,255,255,.65)", display:"flex", alignItems:"center", gap:5 }}>
+                  <span style={{ width:5, height:5, borderRadius:"50%", background:"#86EFAC", display:"inline-block", animation:"pulse 2s infinite" }}/>Active · Odia + English
+                </div>
+              </div>
+              <Badge color="white">95% Accuracy</Badge>
+            </div>
+            <div ref={msgsRef} style={{ flex:1, overflowY:"auto", padding:12, display:"flex", flexDirection:"column", gap:9, background:C.s50 }}>
+              {msgs.map((m,i) => (
+                <div key={i} style={{ display:"flex", gap:8, maxWidth:"88%", alignSelf:m.role==="user"?"flex-end":"flex-start", flexDirection:m.role==="user"?"row-reverse":"row", animation:"fadeUp .2s ease" }}>
+                  <div style={{ width:26, height:26, borderRadius:"50%", background:m.role==="bot"?`linear-gradient(135deg,${C.s700},${C.s500})`:`linear-gradient(135deg,${C.s300},${C.s200})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <I n={m.role==="bot"?"cpu":"user"} s={11}/>
+                  </div>
+                  <div>
+                    <div style={{ padding:"9px 13px", borderRadius:13, fontSize:12, lineHeight:1.55, background:m.role==="bot"?C.white:`linear-gradient(135deg,${C.s700},${C.s500})`, color:m.role==="bot"?C.ink2:"white", border:m.role==="bot"?`1px solid ${C.s100}`:"none", borderBottomLeftRadius:m.role==="bot"?4:13, borderBottomRightRadius:m.role==="user"?4:13 }}>
+                      {renderText(m.text)}
+                    </div>
+                    {m.role==="bot" && i===0 && (
+                      <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginTop:5 }}>
+                        {["Health Q3 balance?","Pending bills today","Fraud alerts?","Top departments"].map(s=>(
+                          <span key={s} onClick={()=>send(s)} style={{ fontSize:10, fontWeight:600, color:C.s700, background:C.white, border:`1.5px solid ${C.s200}`, borderRadius:30, padding:"3px 9px", cursor:"pointer" }}>{s}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {typing && (
+                <div style={{ display:"flex", gap:8, maxWidth:"88%" }}>
+                  <div style={{ width:26, height:26, borderRadius:"50%", background:`linear-gradient(135deg,${C.s700},${C.s500})`, display:"flex", alignItems:"center", justifyContent:"center" }}><I n="cpu" s={11}/></div>
+                  <div style={{ padding:"10px 14px", borderRadius:13, background:C.white, border:`1px solid ${C.s100}`, display:"flex", gap:4, alignItems:"center" }}>
+                    {[0,.2,.4].map(d=><span key={d} style={{ width:6, height:6, borderRadius:"50%", background:C.ink4, display:"block", animation:`pulse 1.2s ${d}s ease-in-out infinite` }}/>)}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div style={{ padding:"10px 12px", borderTop:`1px solid ${C.border}`, background:C.white, display:"flex", gap:8, alignItems:"center" }}>
+              <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send()} placeholder="Ask in English or Odia..." style={{ flex:1, border:`1.5px solid ${C.border}`, borderRadius:30, padding:"8px 13px", fontFamily:"Roboto,sans-serif", fontSize:12, color:C.ink, outline:"none", background:C.s50 }}/>
+              <button onClick={()=>send()} style={{ width:32, height:32, borderRadius:"50%", border:"none", cursor:"pointer", background:`linear-gradient(135deg,${C.s700},${C.s500})`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 2px 8px rgba(14,165,233,.4)`, flexShrink:0 }}><I n="send" s={13}/></button>
+            </div>
+          </div>
+          {/* Side */}
+          <div style={{ display:"flex", flexDirection:"column", gap:10, overflowY:"auto" }}>
+            <Card style={{ padding:13 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:C.ink, marginBottom:9, display:"flex", alignItems:"center", gap:6 }}><I n="money" s={12} col={C.s700} sw={2}/>Live Fund Status</div>
+              {[["Health","₹42.8 Cr"],["Education","₹68.2 Cr"],["PWD","₹31.5 Cr"],["Agriculture","₹22.1 Cr"],["Total Unspent","₹284 Cr"]].map(([k,v])=>(
+                <div key={k} style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", borderBottom:`1px solid ${C.border}` }}>
+                  <span style={{ fontSize:11, color:C.ink3 }}>{k}</span><span style={{ fontSize:12, fontWeight:700, color:C.s700 }}>{v}</span>
+                </div>
+              ))}
+            </Card>
+            <Card style={{ padding:13 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:C.ink, marginBottom:8 }}>Language Mode</div>
+              <div style={{ display:"flex", gap:6 }}>
+                <Btn sm style={{ flex:1, justifyContent:"center" }} onClick={()=>toast("English mode active","info")}>English</Btn>
+                <Btn sm variant="secondary" style={{ flex:1, justifyContent:"center" }} onClick={()=>toast("Odia mode — ✓ ସକ୍ରିୟ!","success")}>ଓଡ଼ିଆ</Btn>
+              </div>
+            </Card>
+            <Card style={{ padding:13 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:C.ink, marginBottom:8 }}>Quick Commands</div>
+              {["Overdue bills (3+ days)","Q3 absorption rate","Underutilized depts"].map(cmd=>(
+                <div key={cmd} onClick={()=>send(cmd)} style={{ fontSize:11, fontWeight:600, color:C.s700, background:C.s50, border:`1px solid ${C.s200}`, borderRadius:8, padding:"6px 10px", cursor:"pointer", marginBottom:5 }}>{cmd}</div>
+              ))}
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════
+   P2 — DESIGN SYSTEM
+══════════════════════════════════════════════════════ */
+const P2 = () => {
+  const [tab, setTab] = useState("colours");
+  const tabs = ["colours","typography","components","icons","spacing"];
+  const iconList = ["chat","shield","activity","mic","cpu","bar","trend","globe","doc","bell","user","check","pin","money","phone","lock","eye","refresh","send","grid","book","link","clock","search","flow","block","star","settings","warning","info"];
+  return (
+    <div>
+      <PageHeader num="02" tag="Foundation · Q1 2025" tagIcon="layers" title="Unified IFMS Design System" desc="40+ reusable components, WCAG 2.1 AA compliance, token-based sky blue theming — the single source of truth for all screens." priority="critical"/>
+      <div style={{ padding:20 }}>
+        <div style={{ display:"flex", gap:3, background:C.s50, borderRadius:30, padding:3, marginBottom:18, flexWrap:"wrap" }}>
+          {tabs.map(t=><button key={t} onClick={()=>setTab(t)} style={{ fontSize:11, fontWeight:600, padding:"6px 14px", borderRadius:30, border:"none", cursor:"pointer", fontFamily:"Roboto,sans-serif", background:tab===t?C.white:"transparent", color:tab===t?C.s700:C.ink3, boxShadow:tab===t?`0 1px 6px rgba(14,165,233,.12)`:"none" }}>{t.charAt(0).toUpperCase()+t.slice(1)}</button>)}
+        </div>
+        {tab==="colours" && (
+          <div>
+            <div style={{ fontSize:11, fontWeight:700, color:C.ink, marginBottom:10 }}>Sky Blue Scale — Click to copy hex</div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+              {[["50","#F0F9FF"],["100","#E0F2FE"],["200","#BAE6FD"],["300","#7DD3FC"],["400","#38BDF8"],["500","#0EA5E9"],["600","#0284C7"],["700","#0369A1"],["800","#075985"],["900","#0C4A6E"]].map(([n,hex])=>(
+                <div key={n} onClick={()=>toast(`sky-${n}: ${hex} copied!`,"success")} style={{ borderRadius:9, overflow:"hidden", width:72, cursor:"pointer", boxShadow:`0 1px 4px rgba(0,0,0,.1)` }}>
+                  <div style={{ height:44, background:hex, border:n==="50"?`1px solid ${C.border}`:"none" }}/>
+                  <div style={{ background:C.white, padding:"5px 6px" }}>
+                    <div style={{ fontSize:9, fontWeight:700, color:C.ink }}>sky-{n}</div>
+                    <div style={{ fontFamily:"Roboto Mono,monospace", fontSize:9, color:C.ink3 }}>{hex}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ height:1, background:C.border, margin:"16px 0" }}/>
+            <div style={{ fontSize:11, fontWeight:700, color:C.ink, marginBottom:10 }}>Semantic Colours</div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
+              {[["Primary",`linear-gradient(135deg,${C.s700},${C.s500})`,"CTAs, links, active"],["Success","#10B981","Approved, done"],["Warning",C.amber,"Pending, SLA"],["Error",C.red,"Critical, fraud"]].map(([n,bg,use])=>(
+                <div key={n} style={{ background:C.white, borderRadius:12, border:`1px solid ${C.border}`, padding:14 }}>
+                  <div style={{ height:36, borderRadius:8, background:bg, marginBottom:10 }}/>
+                  <div style={{ fontFamily:"Roboto Mono,monospace", fontSize:9, color:C.s600 }}>--{n.toLowerCase()}</div>
+                  <div style={{ fontSize:11, fontWeight:700, color:C.ink }}>{n}</div>
+                  <div style={{ fontSize:11, color:C.ink3 }}>{use}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {tab==="typography" && (
+          <div>
+            {[{spec:"900 · 40px · -1.5px",name:"Display",sample:<span style={{ fontSize:40, fontWeight:900, color:C.ink, letterSpacing:-1.5, lineHeight:1 }}>₹2,84,500 Cr</span>},{spec:"700 · 28px · -1px",name:"Heading 1",sample:<span style={{ fontSize:28, fontWeight:700, color:C.ink, letterSpacing:-1 }}>Budget Utilization</span>},{spec:"700 · 20px",name:"Heading 2",sample:<span style={{ fontSize:20, fontWeight:700, color:C.ink }}>Fraud Alert — Critical</span>},{spec:"700 · 16px",name:"Heading 3",sample:<span style={{ fontSize:16, fontWeight:700, color:C.ink }}>Q3 Expenditure Summary</span>},{spec:"400 · 14px · 1.7",name:"Body",sample:<span style={{ fontSize:14, color:C.ink2, lineHeight:1.7, maxWidth:480, display:"block" }}>IFMS AI modules provide real-time financial guidance to DDOs across Odisha in Odia and English.</span>},{spec:"700 · 10px · 2.5px UPPER",name:"Label",sample:<span style={{ fontSize:10, fontWeight:700, letterSpacing:2.5, textTransform:"uppercase", color:C.s700 }}>AI Module · Active</span>},{spec:"Roboto Mono · 12px",name:"Code",sample:<span style={{ fontFamily:"Roboto Mono,monospace", fontSize:12, color:C.s600 }}>--sky-700: #0369A1</span>}].map(r=>(
+              <div key={r.name} style={{ display:"flex", alignItems:"baseline", gap:16, padding:"12px 0", borderBottom:`1px solid ${C.border}` }}>
+                <div style={{ width:130, flexShrink:0 }}>
+                  <div style={{ fontFamily:"Roboto Mono,monospace", fontSize:9, color:C.s600 }}>{r.spec}</div>
+                  <div style={{ fontSize:9, color:C.ink4, marginTop:1 }}>{r.name}</div>
+                </div>
+                {r.sample}
+              </div>
+            ))}
+          </div>
+        )}
+        {tab==="components" && (
+          <div>
+            <div style={{ fontSize:11, fontWeight:700, color:C.ink, marginBottom:12 }}>Buttons — Click to interact</div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:10, alignItems:"center", marginBottom:20 }}>
+              <Btn onClick={()=>toast("Primary CTA clicked!","info")}>Primary Action</Btn>
+              <Btn variant="secondary" onClick={()=>toast("Secondary clicked","info")}>Secondary</Btn>
+              <Btn sm onClick={()=>toast("Small CTA","info")}>Small</Btn>
+              <Btn variant="success" onClick={()=>toast("Bill Approved ✓","success")}>Approve</Btn>
+              <Btn variant="danger" onClick={()=>toast("Bill Rejected","error")}>Reject</Btn>
+              <Btn disabled>Disabled</Btn>
+            </div>
+            <div style={{ fontSize:11, fontWeight:700, color:C.ink, marginBottom:12 }}>Badges</div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:20 }}>
+              <Badge>Active</Badge><Badge color="green">Approved</Badge><Badge color="amber">Pending</Badge><Badge color="red">Critical</Badge><Badge color="purple">Future</Badge>
+              <span style={{ background:`linear-gradient(135deg,${C.s700},${C.s500})`, color:"white", fontSize:10, fontWeight:700, padding:"3px 10px", borderRadius:30 }}>AI Powered</span>
+            </div>
+            <div style={{ fontSize:11, fontWeight:700, color:C.ink, marginBottom:12 }}>Border Radius Scale</div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:14, alignItems:"flex-end" }}>
+              {[[4,"4px"],[8,"8px"],[12,"12px"],[16,"16px"],[20,"20px"]].map(([r,l])=>(
+                <div key={r} style={{ textAlign:"center" }}>
+                  <div style={{ width:48, height:48, borderRadius:r, background:`linear-gradient(135deg,${C.s700},${C.s500})` }}/>
+                  <div style={{ fontFamily:"Roboto Mono,monospace", fontSize:9, color:C.ink3, marginTop:6 }}>{l}</div>
+                </div>
+              ))}
+              <div style={{ textAlign:"center" }}>
+                <div style={{ width:64, height:28, borderRadius:999, background:`linear-gradient(135deg,${C.s700},${C.s500})` }}/>
+                <div style={{ fontFamily:"Roboto Mono,monospace", fontSize:9, color:C.ink3, marginTop:6 }}>Pill</div>
+              </div>
+            </div>
+          </div>
+        )}
+        {tab==="icons" && (
+          <div>
+            <div style={{ fontSize:11, fontWeight:700, color:C.ink, marginBottom:12 }}>White SVG Icons — 2px stroke · round linecap — Click to copy name</div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+              {iconList.map(ic=>(
+                <div key={ic} onClick={()=>toast(`Icon: ${ic}`,"info")} title={ic} style={{ width:50, height:50, borderRadius:12, background:`linear-gradient(135deg,${C.s700},${C.s500})`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"transform .2s" }}
+                  onMouseEnter={e=>e.currentTarget.style.transform="scale(1.1)"} onMouseLeave={e=>e.currentTarget.style.transform=""}>
+                  <I n={ic} s={22}/>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {tab==="spacing" && (
+          <div>
+            <div style={{ fontSize:11, fontWeight:700, color:C.ink, marginBottom:16 }}>Spacing Scale — 4px base unit</div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:16, alignItems:"flex-end", marginBottom:24 }}>
+              {[4,8,12,16,20,24,32,40,48,64].map(s=>(
+                <div key={s} style={{ textAlign:"center" }}>
+                  <div style={{ width:s, height:s, background:`linear-gradient(135deg,${C.s700},${C.s400})`, borderRadius:Math.min(s*.18,10), margin:"0 auto" }}/>
+                  <div style={{ fontFamily:"Roboto Mono,monospace", fontSize:9, color:C.ink3, marginTop:8 }}>{s}px</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════
+   P3 — ANALYTICS DASHBOARD
+══════════════════════════════════════════════════════ */
+const P3 = () => {
+  const [chartData, setChartData] = useState([60,75,55,85,70,92,78,84,95,100,88,80]);
+  const [chartTab, setChartTab] = useState("monthly");
+  const [kpis, setKpis] = useState({ budget:"₹284 Cr", bills:1284, pending:47, fraud:3 });
+  const months = ["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+  const refresh = () => {
+    setChartData(chartData.map(() => 40+Math.floor(Math.random()*55)));
+    setKpis({ budget:`₹${270+Math.floor(Math.random()*30)} Cr`, bills:1200+Math.floor(Math.random()*200), pending:35+Math.floor(Math.random()*25), fraud:1+Math.floor(Math.random()*5) });
+    toast("Analytics refreshed with live data","success");
+  };
+  const switchChart = (t) => {
+    setChartTab(t);
+    if(t==="quarterly") setChartData([65,82,90,95]);
+    else if(t==="annual") setChartData([72,81,89,95]);
+    else setChartData([60,75,55,85,70,92,78,84,95,100,88,80]);
+    toast(`Switched to ${t} view`,"info");
+  };
+  const labels = chartTab==="quarterly"?["Q1","Q2","Q3","Q4 (fc)"]:chartTab==="annual"?["2023","2024","2025","2026 (fc)"]:months;
+  const isForecast = (i) => chartTab==="monthly"?i>=6:(i===3);
+  const depts = [["Health",67],["Education",82],["PWD",74],["Agriculture",55],["Water Resources",91],["Social Welfare",38]];
+  return (
+    <div>
+      <PageHeader num="03" tag="Analytics · Q1 2025" tagIcon="bar" title="Real-Time Analytics Dashboard" desc="Live financial charts with AI anomaly detection, district drill-down, department utilization. Click bars and KPIs to explore." priority="critical"/>
+      <div style={{ padding:20 }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14, flexWrap:"wrap", gap:8 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:10, fontWeight:600, color:C.green }}>
+            <span style={{ width:7, height:7, borderRadius:"50%", background:C.green, display:"inline-block", animation:"pulse 1.5s infinite" }}/>LIVE · Auto-refreshing
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <Btn sm variant="secondary" onClick={refresh}><I n="refresh" s={12} col={C.s700} sw={2}/>Refresh</Btn>
+            <Btn sm onClick={()=>toast("Exporting analytics...","success")}><I n="download" s={12}/>Export PDF</Btn>
+          </div>
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:16 }}>
+          {[
+            { label:"Unspent Budget", val:kpis.budget, trend:"↑ Absorption on track", up:true, icon:"money", grad:`linear-gradient(135deg,${C.s700},${C.s500})` },
+            { label:"Bills Processed", val:kpis.bills.toLocaleString(), trend:"↑ +8% vs yesterday", up:true, icon:"check", grad:`linear-gradient(135deg,#059669,${C.green})` },
+            { label:"Pending Approvals", val:kpis.pending, trend:"4 near SLA breach", up:false, icon:"clock", grad:`linear-gradient(135deg,#D97706,${C.amber})` },
+            { label:"Fraud Alerts", val:kpis.fraud, trend:"● 2 Critical active", up:false, icon:"shield", grad:`linear-gradient(135deg,#DC2626,${C.red})` },
+          ].map((k,ci) => (
+            <div key={k.label} onClick={()=>toast(`${k.label}: ${k.val}`,"info")} style={{ background:C.white, borderRadius:14, padding:15, border:`1px solid ${C.border}`, cursor:"pointer", position:"relative", overflow:"hidden", transition:"all .25s" }}
+              onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-2px)"; e.currentTarget.style.boxShadow=`0 5px 20px rgba(14,165,233,.12)`; }}
+              onMouseLeave={e=>{ e.currentTarget.style.transform=""; e.currentTarget.style.boxShadow=""; }}>
+              <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:k.grad }}/>
+              <div style={{ width:34, height:34, borderRadius:9, background:k.grad, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:9 }}><I n={k.icon} s={17}/></div>
+              <div style={{ fontSize:22, fontWeight:900, color:C.ink, lineHeight:1 }}>{k.val}</div>
+              <div style={{ fontSize:11, color:C.ink3, marginTop:3 }}>{k.label}</div>
+              <div style={{ fontSize:10, fontWeight:700, marginTop:3, color:k.up?C.green:C.red }}>{k.trend}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 280px", gap:14 }}>
+          <Card style={{ padding:20 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14, flexWrap:"wrap", gap:8 }}>
+              <div><div style={{ fontSize:14, fontWeight:700, color:C.ink }}>Department Expenditure FY 2025-26</div><div style={{ fontSize:11, color:C.ink4 }}>₹ in Crore · Click bars for detail</div></div>
+              <div style={{ display:"flex", gap:3, background:C.s50, borderRadius:30, padding:3 }}>
+                {["monthly","quarterly","annual"].map(t=><button key={t} onClick={()=>switchChart(t)} style={{ fontSize:11, fontWeight:600, padding:"4px 11px", borderRadius:30, border:"none", cursor:"pointer", fontFamily:"Roboto,sans-serif", background:chartTab===t?C.white:"transparent", color:chartTab===t?C.s700:C.ink3 }}>{t.charAt(0).toUpperCase()+t.slice(1)}</button>)}
+              </div>
+            </div>
+            <div style={{ height:150, display:"flex", alignItems:"flex-end", gap:5 }}>
+              {chartData.map((v,i) => (
+                <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, flex:1 }}>
+                  <div onClick={()=>toast(`${labels[i]||""}${labels[i]?": ":""}₹${(v*.37).toFixed(1)} Cr${isForecast(i)?" (Forecast)":""}`, "info")} style={{ width:"100%", height:`${v}%`, borderRadius:"4px 4px 0 0", background:isForecast(i)?"linear-gradient(to top,rgba(14,165,233,.2),rgba(14,165,233,.5))":"linear-gradient(to top,#0C4A6E,#0EA5E9)", border:isForecast(i)?`2px dashed ${C.s400}`:"none", cursor:"pointer", minHeight:4, transition:"height .4s ease" }}
+                    onMouseEnter={e=>e.currentTarget.style.opacity=".8"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}/>
+                  <span style={{ fontSize:9, color:C.ink4 }}>{labels[i]}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display:"flex", gap:16, marginTop:8 }}>
+              {[["Actual",`linear-gradient(90deg,${C.s900},${C.s500})`,false],["AI Forecast","rgba(14,165,233,.4)",true]].map(([l,bg,dash])=>(
+                <div key={l} style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:C.ink3 }}>
+                  <div style={{ width:12, height:8, borderRadius:3, background:bg, border:dash?`1.5px dashed ${C.s400}`:"none" }}/>{l}
+                </div>
+              ))}
+            </div>
+          </Card>
+          <Card style={{ padding:16 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:C.ink, marginBottom:12 }}>Department Utilization</div>
+            {depts.map(([n,p]) => (
+              <div key={n} onClick={()=>toast(`${n}: ${p}% utilized`,"info")} style={{ marginBottom:10, cursor:"pointer", padding:"4px 4px", borderRadius:8, transition:"background .15s" }}
+                onMouseEnter={e=>e.currentTarget.style.background=C.s50} onMouseLeave={e=>e.currentTarget.style.background=""}>
+                <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:C.ink, fontWeight:600, marginBottom:4 }}>
+                  <span>{n}</span><span style={{ color:p>=75?C.green:p>=55?C.s700:C.red }}>{p}%</span>
+                </div>
+                <Prog pct={p} color={p>=75?"linear-gradient(90deg,#059669,#10B981)":p>=55?`linear-gradient(90deg,${C.s700},${C.s400})`:`linear-gradient(90deg,${C.red},#F87171)`}/>
+              </div>
+            ))}
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════
+   P4 — SMART WORKFLOW
+══════════════════════════════════════════════════════ */
+const P4 = () => {
+  const [stage, setStage] = useState(2);
+  const steps = [
+    { label:"DDO Submit", time:"09:14 AM", icon:"doc" },
+    { label:"AI Validate", time:"09:15 AM", icon:"cpu" },
+    { label:"Treasury Review", time:"In Progress", icon:"user" },
+    { label:"Final Approve", time:"Pending", icon:"check" },
+    { label:"Payment", time:"Pending", icon:"money" },
+  ];
+  const advance = () => {
+    if(stage < 4) { setStage(s=>s+1); toast(`Stage ${stage+1}: ${steps[stage].label} ✓`,"success"); }
+    else { toast("✅ Bill fully processed — ₹4,25,000 payment initiated!","success"); setStage(2); }
+  };
+  const bills = [
+    { id:"IFM-9042", dept:"Health Dept", amt:"₹4,25,000", stage:"Treasury Review", status:"active", action:"Approve" },
+    { id:"IFM-9041", dept:"PWD", amt:"₹12,80,000", stage:"Auto-Approved ✓", status:"done", action:"Pay Now" },
+    { id:"IFM-9040", dept:"Education", amt:"₹8,60,000", stage:"FRAUD HOLD", status:"fraud", action:"Audit" },
+    { id:"IFM-9039", dept:"Agriculture", amt:"₹2,10,000", stage:"SLA Warning", status:"warn", action:"Escalate" },
+  ];
+  const statusColor = { active:C.s500, done:C.green, fraud:C.red, warn:C.amber };
+  return (
+    <div>
+      <PageHeader num="04" tag="Automation · Q1 2025" tagIcon="flow" title="Smart Workflow Automation" desc="AI-powered bill routing, SLA tracking, auto-approval for low-risk transactions. Click the glowing pipeline step to advance." priority="high"/>
+      <div style={{ padding:20 }}>
+        <Card style={{ padding:20, overflowX:"auto", marginBottom:16 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:8 }}>
+            <div style={{ fontSize:14, fontWeight:700, color:C.ink }}>Bill Approval Pipeline — IFM-9042</div>
+            <Badge color="green">● SLA: 24-Hour Target</Badge>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", minWidth:560 }}>
+            {steps.map((s,i) => (
+              <div key={i} style={{ display:"contents" }}>
+                <div style={{ display:"flex", flexDirection:"column", alignItems:"center", zIndex:1 }}>
+                  <div onClick={i===stage?advance:undefined} style={{ width:58, height:58, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", border:"3px solid white", boxShadow:`0 4px 16px rgba(14,165,233,.2)`, cursor:i===stage?"pointer":"default", background:i<stage?`linear-gradient(135deg,#059669,${C.green})`:i===stage?`linear-gradient(135deg,${C.s700},${C.s500})`:"white", borderColor:i<stage?"white":i===stage?"white":C.border, animation:i===stage?"glow 2s infinite":"none", transition:"all .3s" }}
+                    onMouseEnter={e=>i===stage&&(e.currentTarget.style.transform="scale(1.08)")} onMouseLeave={e=>e.currentTarget.style.transform=""}>
+                    <I n={i<stage?"check":s.icon} s={22} col={i<=stage?"white":C.ink4} sw={2}/>
+                  </div>
+                  <div style={{ fontSize:10, fontWeight:600, color:C.ink2, marginTop:8, textAlign:"center", maxWidth:68 }}>{s.label}</div>
+                  <div style={{ fontSize:9, color:C.ink4, marginTop:2 }}>{i<stage?"Done ✓":i===stage?s.time:s.time}</div>
+                </div>
+                {i < steps.length-1 && (
+                  <div style={{ flex:1, height:3, minWidth:28, background:i<stage?C.green:i===stage?`linear-gradient(90deg,${C.green},${C.s500})`:C.border }}/>
+                )}
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize:11, color:C.ink4, marginTop:12, textAlign:"center" }}>💡 Click the glowing blue step to advance the workflow</p>
+        </Card>
+        <div style={{ fontSize:13, fontWeight:700, color:C.ink, marginBottom:10 }}>Active Bills Queue</div>
+        {bills.map(b => (
+          <div key={b.id} onClick={()=>toast(`${b.id} details loaded`,"info")} style={{ display:"flex", alignItems:"center", gap:11, padding:"11px 15px", background:C.white, border:`1px solid ${C.border}`, borderRadius:12, cursor:"pointer", transition:"all .2s", marginBottom:8 }}
+            onMouseEnter={e=>{ e.currentTarget.style.borderColor=C.s300; e.currentTarget.style.boxShadow=`0 3px 12px rgba(14,165,233,.1)`; }}
+            onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.boxShadow=""; }}>
+            <div style={{ width:8, height:8, borderRadius:"50%", background:statusColor[b.status], flexShrink:0 }}/>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.ink }}>{b.id} · {b.dept}</div>
+              <div style={{ fontSize:11, color:C.ink3 }}>{b.amt} · {b.status==="done"?"Low risk — auto-approved":b.status==="fraud"?"AI flagged: Duplicate pattern · Risk 94":b.status==="warn"?"SLA breach in 45 minutes":"Submitted 2h ago"}</div>
+            </div>
+            <span style={{ fontSize:11, fontWeight:600, color:statusColor[b.status] }}>{b.stage}</span>
+            <button onClick={e=>{ e.stopPropagation(); toast(`${b.id}: ${b.action}`, b.status==="fraud"?"error":b.status==="done"?"success":"info"); }} style={{ fontSize:11, fontWeight:700, padding:"4px 11px", borderRadius:30, border:`1.5px solid ${statusColor[b.status]}`, color:b.status==="done"?"#065F46":statusColor[b.status], background:C.white, cursor:"pointer", fontFamily:"Roboto,sans-serif" }}>
+              {b.action}
+            </button>
+          </div>
+        ))}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginTop:8 }}>
+          {[["94.2%","SLA Achievement",C.green],["6.4h","Avg Processing",C.s700],["38%","Auto-Approved",C.s700],["96.1%","AI Routing Accuracy",C.green]].map(([v,l,c])=>(
+            <div key={l} onClick={()=>toast(`${l}: ${v}`,"info")} style={{ background:C.white, borderRadius:12, border:`1px solid ${C.border}`, padding:14, textAlign:"center", cursor:"pointer" }}>
+              <div style={{ fontSize:22, fontWeight:900, color:c }}>{v}</div>
+              <div style={{ fontSize:11, color:C.ink3, marginTop:3 }}>{l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════
+   P5 — FRAUD DETECTION
+══════════════════════════════════════════════════════ */
+const P5 = () => {
+  const [filter, setFilter] = useState("all");
+  const [alerts, setAlerts] = useState([
+    { id:"IFM-8842", level:"critical", title:"Duplicate Bill — Auto Hold Applied", desc:"₹4,25,000 · M/S Sharma Constructions · Matches IFM-7104 (6 days ago)", score:94 },
+    { id:"IFM-9011", level:"high", title:"Inflated Bill — 340% Above Average", desc:"₹18,40,000 · Education Dept · Category avg ₹4.2L", score:71 },
+    { id:"IFM-9244", level:"medium", title:"Off-Hours Submission (2:14 AM)", desc:"₹3,10,000 · Vendor registered 14 days ago · Low history", score:45 },
+    { id:"IFM-9301", level:"low", title:"Low Risk — Auto-Cleared", desc:"₹85,000 · Regular vendor · 48 previous clean transactions", score:12 },
+  ]);
+  const simulate = () => {
+    const newA = { id:`IFM-${9400+alerts.length}`, level:"critical", title:"New Fraud Alert Detected!", desc:`₹${(Math.random()*5+1).toFixed(1)}L · AI anomaly triggered`, score:Math.floor(70+Math.random()*29) };
+    setAlerts(a => [newA,...a]);
+    toast("New critical fraud alert detected!","error");
+  };
+  const hold = (id) => { setAlerts(a=>a.map(x=>x.id===id?{...x,title:"HELD — "+x.title}:x)); toast(`${id} held for audit`,"error"); };
+  const clear = (id) => { setAlerts(a=>a.filter(x=>x.id!==id)); toast(`${id} cleared — processing`,"success"); };
+  const lc = { critical:{bg:"#FEE2E2",ic:C.red,border:C.red,textColor:C.red}, high:{bg:"#FEF3C7",ic:C.amber,border:C.amber,textColor:C.amber}, medium:{bg:C.s50,ic:C.s600,border:C.s500,textColor:C.s600}, low:{bg:"#D1FAE5",ic:C.green,border:C.green,textColor:C.green} };
+  const filtered = filter==="all"?alerts:alerts.filter(a=>a.level===filter);
+  return (
+    <div>
+      <PageHeader num="05" tag="Security · Q2 2025" tagIcon="shield" title="AI Fraud Detection Engine" desc="ML anomaly detection on live transactions. Filter by severity, hold or clear bills, and simulate new alerts." priority="critical"/>
+      <div style={{ padding:20 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:16 }}>
+          {[["Critical",alerts.filter(a=>a.level==="critical").length,C.red],["High Risk",alerts.filter(a=>a.level==="high").length,C.amber],["Medium",alerts.filter(a=>a.level==="medium").length,C.s600],["Saved","₹2.4Cr",C.green]].map(([l,v,c])=>(
+            <Card key={l} style={{ padding:14, textAlign:"center" }}>
+              <div style={{ fontSize:24, fontWeight:900, color:c, lineHeight:1 }}>{v}</div>
+              <div style={{ fontSize:10, color:C.ink3, marginTop:3 }}>{l}</div>
+            </Card>
+          ))}
+        </div>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12, flexWrap:"wrap", gap:8 }}>
+          <div style={{ display:"flex", gap:3, background:C.white, border:`1px solid ${C.border}`, borderRadius:30, padding:3 }}>
+            {["all","critical","high","medium","low"].map(f=>(
+              <button key={f} onClick={()=>setFilter(f)} style={{ fontSize:11, fontWeight:600, padding:"5px 12px", borderRadius:30, border:"none", cursor:"pointer", fontFamily:"Roboto,sans-serif", background:filter===f?`linear-gradient(135deg,${C.s700},${C.s500})`:"transparent", color:filter===f?"white":C.ink3 }}>
+                {f.charAt(0).toUpperCase()+f.slice(1)}
+              </button>
+            ))}
+          </div>
+          <Btn sm onClick={simulate}><I n="bell" s={12}/>Simulate Alert</Btn>
+        </div>
+        {filtered.map(a => (
+          <div key={a.id} onClick={()=>toast(`Reviewing ${a.id}...`,"info")} style={{ display:"flex", alignItems:"center", gap:11, padding:"13px 15px", background:C.white, border:`1px solid ${C.border}`, borderLeft:`4px solid ${lc[a.level].border}`, borderRadius:13, marginBottom:9, cursor:"pointer", transition:"all .2s", animation:"fadeUp .3s ease" }}
+            onMouseEnter={e=>e.currentTarget.style.transform="translateX(3px)"} onMouseLeave={e=>e.currentTarget.style.transform=""}>
+            <div style={{ width:40, height:40, borderRadius:11, background:lc[a.level].bg, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <I n="shield" s={18} col={lc[a.level].ic} sw={2}/>
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.ink, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{a.title}</div>
+              <div style={{ fontSize:11, color:C.ink3, marginTop:2 }}>{a.desc}</div>
+            </div>
+            <div style={{ textAlign:"center", flexShrink:0, minWidth:48 }}>
+              <div style={{ fontSize:22, fontWeight:900, color:lc[a.level].textColor, lineHeight:1 }}>{a.score}</div>
+              <div style={{ fontSize:9, color:C.ink4, textTransform:"uppercase", letterSpacing:.5 }}>Risk</div>
+            </div>
+            <div style={{ display:"flex", gap:5, flexShrink:0 }}>
+              <button onClick={e=>{ e.stopPropagation(); hold(a.id); }} style={{ fontSize:10, fontWeight:700, padding:"4px 10px", borderRadius:30, border:`1.5px solid ${C.red}`, color:C.red, background:C.white, cursor:"pointer", fontFamily:"Roboto,sans-serif" }}>Hold</button>
+              <button onClick={e=>{ e.stopPropagation(); clear(a.id); }} style={{ fontSize:10, fontWeight:700, padding:"4px 10px", borderRadius:30, border:`1.5px solid ${C.green}`, color:"#065F46", background:C.white, cursor:"pointer", fontFamily:"Roboto,sans-serif" }}>Clear</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════
+   P6 — PREDICTIVE FORECASTING
+══════════════════════════════════════════════════════ */
+const P6 = () => {
+  const [dept, setDept] = useState("All Departments");
+  const [running, setRunning] = useState(false);
+  const [vals, setVals] = useState([60,75,55,82,70,90,78,85,95,100,92,82]);
+  const months = ["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+  const run = () => {
+    setRunning(true);
+    toast(`Running AI forecast for ${dept}...`,"info");
+    setTimeout(() => {
+      setVals(vals.map(() => 40+Math.floor(Math.random()*55)));
+      setRunning(false);
+      toast("Forecast complete — 89% confidence","success");
+    }, 1600);
+  };
+  const depts = [["Health & Family Welfare",67,C.s700],["Education",82,C.green],["Public Works Dept",74,C.s700],["Agriculture",55,C.amber],["Water Resources",91,C.green]];
+  return (
+    <div>
+      <PageHeader num="06" tag="AI Forecasting · Q2 2025" tagIcon="activity" title="Predictive Budget Forecasting" desc="Time-series AI with 89% accuracy. Change department, click Run AI Forecast, watch bars animate with new predictions." priority="high"/>
+      <div style={{ padding:20 }}>
+        <Card style={{ padding:20 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16, flexWrap:"wrap" }}>
+            <select value={dept} onChange={e=>setDept(e.target.value)} style={{ border:`1.5px solid ${C.border}`, borderRadius:10, padding:"8px 12px", fontFamily:"Roboto,sans-serif", fontSize:12, color:C.ink, background:C.white, outline:"none", maxWidth:200 }}>
+              {["All Departments","Health","Education","PWD","Agriculture","Water Resources"].map(d=><option key={d}>{d}</option>)}
+            </select>
+            <Btn sm onClick={run} disabled={running}>
+              {running?<span style={{ width:12,height:12,borderRadius:"50%",border:"2px solid rgba(255,255,255,.3)",borderTopColor:"white",display:"inline-block",animation:"spin .6s linear infinite" }}/>:<I n="play" s={12}/>}
+              {running?"Running...":"Run AI Forecast"}
+            </Btn>
+            <Badge>89% Confidence</Badge>
+          </div>
+          <div style={{ height:170, display:"flex", alignItems:"flex-end", gap:4 }}>
+            {vals.map((v,i) => (
+              <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, flex:1, height:"100%" }}>
+                <div style={{ width:"100%", flex:1, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
+                  <div onClick={()=>toast(`${months[i]}: ₹${(v*.37).toFixed(1)} Cr${i>=6?" (Forecast)":""}`, "info")} style={{ width:"100%", height:`${v}%`, borderRadius:"4px 4px 0 0", cursor:"pointer", minHeight:4, transition:"height .7s cubic-bezier(.4,0,.2,1)", background:i>=6?"linear-gradient(to top,rgba(14,165,233,.2),rgba(14,165,233,.48))":"linear-gradient(to top,#0C4A6E,#0EA5E9)", border:i>=6?`2px dashed ${C.s400}`:"none" }}/>
+                </div>
+                <span style={{ fontSize:9, color:C.ink4 }}>{months[i]}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ display:"flex", gap:16, margin:"8px 0 14px" }}>
+            {[["Actual",`linear-gradient(90deg,${C.s900},${C.s500})`,false],["AI Forecast","rgba(14,165,233,.4)",true]].map(([l,bg,dash])=>(
+              <div key={l} style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:C.ink3 }}>
+                <div style={{ width:12, height:8, borderRadius:3, background:bg, border:dash?`1.5px dashed ${C.s400}`:"none" }}/>{l}
+              </div>
+            ))}
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:16 }}>
+            {[["₹284 Cr","Projected Total","↑ +12% YoY",true],["89%","Forecast Accuracy","↑ High Confidence",true],["₹38 Cr","Projected Surplus","↓ Reallocate by Jan",false]].map(([n,l,t,up])=>(
+              <div key={l} style={{ background:C.s50, borderRadius:10, padding:12, textAlign:"center" }}>
+                <div style={{ fontSize:20, fontWeight:900, color:C.s700 }}>{n}</div>
+                <div style={{ fontSize:10, color:C.ink4, marginTop:2 }}>{l}</div>
+                <div style={{ fontSize:11, fontWeight:700, marginTop:3, color:up?C.green:C.red }}>{t}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize:12, fontWeight:700, color:C.ink, marginBottom:10 }}>Department Utilization Forecast</div>
+          {depts.map(([n,p,c]) => (
+            <div key={n} onClick={()=>toast(`${n}: ${p}% utilized`,"info")} style={{ display:"flex", alignItems:"center", gap:10, padding:"7px 8px", borderRadius:9, cursor:"pointer", marginBottom:4, transition:"background .15s" }}
+              onMouseEnter={e=>e.currentTarget.style.background=C.s50} onMouseLeave={e=>e.currentTarget.style.background=""}>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:C.ink, marginBottom:4 }}>{n}</div>
+                <Prog pct={p} color={`linear-gradient(90deg,${c},${c})`}/>
+              </div>
+              <div style={{ fontSize:12, fontWeight:700, color:c }}>{p}%</div>
+            </div>
+          ))}
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════
+   P7 — ROLE-BASED UI
+══════════════════════════════════════════════════════ */
+const P7 = () => {
+  const [role, setRole] = useState("ddo");
+  const roles = {
+    ddo:{ label:"DDO Officer", icon:"user", widgets:[{i:"doc",t:"Submit Bill",v:"New",s:"Create & submit"},{i:"clock",t:"Pending Bills",v:"12",s:"Awaiting approval"},{i:"money",t:"Fund Balance",v:"₹42.8 Cr",s:"This quarter"},{i:"activity",t:"Track Status",v:"Live",s:"Real-time tracking"},{i:"download",t:"My Reports",v:"4 New",s:"Download ready"},{i:"chat",t:"Ask AI",v:"Copilot",s:"Odia / English"}] },
+    treasury:{ label:"Treasury Officer", icon:"money", widgets:[{i:"check",t:"Review Queue",v:"47",s:"Bills pending"},{i:"shield",t:"Fraud Alerts",v:"3 Critical",s:"Needs action"},{i:"bar",t:"Dept Overview",v:"28 Depts",s:"Fund status"},{i:"clock",t:"SLA Monitor",v:"4 At Risk",s:"Breach in 2h"},{i:"activity",t:"Payment Queue",v:"₹4.2 Cr",s:"Ready"},{i:"globe",t:"Audit Trail",v:"Live",s:"All transactions"}] },
+    secretary:{ label:"Finance Secretary", icon:"star", widgets:[{i:"grid",t:"State Dashboard",v:"Live",s:"Full overview"},{i:"trend",t:"Budget Health",v:"74/100",s:"AI score"},{i:"bar",t:"Expenditure",v:"43.2%",s:"FY utilization"},{i:"shield",t:"Risk Summary",v:"3 Critical",s:"Action needed"},{i:"download",t:"CAG Reports",v:"2 Due",s:"Generate now"},{i:"activity",t:"AI Forecast",v:"Q4 Ready",s:"89% confidence"}] },
+    ag:{ label:"Accountant General", icon:"lock", widgets:[{i:"block",t:"Audit Ledger",v:"10,041",s:"Immutable blocks"},{i:"shield",t:"Compliance",v:"97.2%",s:"WCAG & audit"},{i:"download",t:"AG Reports",v:"Generate",s:"Auto-reporting"},{i:"eye",t:"Anomaly Watch",v:"14 Flags",s:"Under review"},{i:"globe",t:"Open Data",v:"Public Portal",s:"Transparency"},{i:"link",t:"API Access",v:"Connected",s:"Real-time sync"}] },
+  };
+  const cur = roles[role];
+  return (
+    <div>
+      <PageHeader num="07" tag="Personalization · Q1 2025" tagIcon="user" title="Role-Based Personalized UI" desc="Adaptive interface showing only relevant modules per role. Click a role below to see the entire dashboard reconfigure instantly." priority="high"/>
+      <div style={{ padding:20 }}>
+        <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:20 }}>
+          {Object.entries(roles).map(([k,v]) => (
+            <button key={k} onClick={()=>{ setRole(k); toast(`${v.label} view activated`,"info"); }} style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 14px", borderRadius:11, border:`2px solid ${role===k?C.s500:C.border}`, background:role===k?`linear-gradient(135deg,${C.s700},${C.s500})`:C.white, cursor:"pointer", fontFamily:"Roboto,sans-serif", fontSize:12, fontWeight:600, color:role===k?"white":C.ink3, boxShadow:role===k?`0 3px 12px rgba(14,165,233,.3)`:"none", transition:"all .2s" }}>
+              <div style={{ width:28, height:28, borderRadius:8, background:role===k?"rgba(255,255,255,.2)":C.s100, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <I n={v.icon} s={14} col={role===k?"white":C.s700} sw={2}/>
+              </div>
+              {v.label}
+            </button>
+          ))}
+        </div>
+        <div key={role} style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, animation:"fadeUp .3s ease" }}>
+          {cur.widgets.map((w,i) => (
+            <div key={i} onClick={()=>toast(`Opening ${w.t}...`,"info")} style={{ background:C.white, borderRadius:14, border:`1px solid ${C.border}`, padding:15, cursor:"pointer", transition:"all .2s" }}
+              onMouseEnter={e=>{ e.currentTarget.style.borderColor=C.s300; e.currentTarget.style.boxShadow=`0 4px 14px rgba(14,165,233,.1)`; }}
+              onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.boxShadow=""; }}>
+              <div style={{ width:36, height:36, borderRadius:10, background:`linear-gradient(135deg,${C.s700},${C.s500})`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:10 }}><I n={w.i} s={18}/></div>
+              <div style={{ fontSize:12, fontWeight:700, color:C.ink, marginBottom:4 }}>{w.t}</div>
+              <div style={{ fontSize:20, fontWeight:900, color:C.s700 }}>{w.v}</div>
+              <div style={{ fontSize:10, color:C.ink3, marginTop:3 }}>{w.s}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════
+   P8 — OCR ENGINE
+══════════════════════════════════════════════════════ */
+const P8 = () => {
+  const [state, setState] = useState("idle");
+  const [fields, setFields] = useState({});
+  const run = () => {
+    setState("processing");
+    toast("AI OCR processing document...","info");
+    const steps = [
+      [400,{vendor:"M/S Pharma Supplies Ltd"}],
+      [800,{vendor:"M/S Pharma Supplies Ltd",gst:"27AABCP1234R1ZX ✓"}],
+      [1200,{vendor:"M/S Pharma Supplies Ltd",gst:"27AABCP1234R1ZX ✓",amount:"₹4,25,000"}],
+      [1600,{vendor:"M/S Pharma Supplies Ltd",gst:"27AABCP1234R1ZX ✓",amount:"₹4,25,000",date:"14 November 2025"}],
+      [2000,{vendor:"M/S Pharma Supplies Ltd",gst:"27AABCP1234R1ZX ✓",amount:"₹4,25,000",date:"14 November 2025",budget:"2210 — Health Services"}],
+      [2400,{vendor:"M/S Pharma Supplies Ltd",gst:"27AABCP1234R1ZX ✓",amount:"₹4,25,000",date:"14 November 2025",budget:"2210 — Health Services",pan:"AABCP1234R ✓"}],
+    ];
+    steps.forEach(([delay,f]) => setTimeout(()=>setFields(f), delay));
+    setTimeout(()=>{ setState("done"); toast("OCR complete — 99.2% accuracy!","success"); }, 2800);
+  };
+  const flds = [["Vendor Name","vendor"],["GSTIN","gst"],["Invoice Amount","amount"],["Invoice Date","date"],["Budget Head","budget"],["PAN Number","pan"]];
+  return (
+    <div>
+      <PageHeader num="08" tag="OCR AI · Q2 2025" tagIcon="doc" title="Smart OCR Document Engine" desc="AI-powered document extraction with 99.2% accuracy. Click Process Demo Document to watch all 6 fields populate live." priority="critical"/>
+      <div style={{ padding:20 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+          <div>
+            <div onClick={state==="idle"?run:undefined} style={{ border:`2px dashed ${C.s300}`, borderRadius:16, padding:32, textAlign:"center", cursor:state==="idle"?"pointer":"default", transition:"all .2s", background:C.white }}
+              onMouseEnter={e=>state==="idle"&&(e.currentTarget.style.background=C.s50)} onMouseLeave={e=>state==="idle"&&(e.currentTarget.style.background=C.white)}>
+              <div style={{ width:52, height:52, borderRadius:14, background:`linear-gradient(135deg,${C.s700},${C.s500})`, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 12px" }}>
+                {state==="processing"?<span style={{ width:20,height:20,borderRadius:"50%",border:"2px solid rgba(255,255,255,.3)",borderTopColor:"white",display:"block",animation:"spin .6s linear infinite" }}/>:<I n="download" s={22}/>}
+              </div>
+              <div style={{ fontSize:13, fontWeight:600, color:C.ink2, marginBottom:4 }}>{state==="idle"?"Upload Bill / Invoice / Voucher":state==="processing"?"AI Processing Document...":"Document Processed ✓"}</div>
+              <div style={{ fontSize:11, color:C.ink3, marginBottom:12 }}>PDF, JPG, PNG · Click to run demo extraction</div>
+              {state==="idle" && <Btn sm onClick={e=>{e.stopPropagation();run();}}><I n="cpu" s={12}/>Process Demo Document</Btn>}
+              {state==="done" && <Btn sm variant="secondary" onClick={()=>{setState("idle");setFields({});}}>Reset</Btn>}
+            </div>
+            <div style={{ background:`linear-gradient(135deg,${C.s900},${C.s700})`, borderRadius:14, padding:16, color:"white", marginTop:12 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}><I n="cpu" s={20}/><span style={{ fontSize:13, fontWeight:700 }}>AI Accuracy Score</span></div>
+              <div style={{ fontSize:36, fontWeight:900, lineHeight:1, marginBottom:4 }}>99.2%</div>
+              <div style={{ fontSize:11, opacity:.7 }}>Based on 50,000+ documents processed</div>
+              <div style={{ height:5, background:"rgba(255,255,255,.2)", borderRadius:3, marginTop:10, overflow:"hidden" }}>
+                <div style={{ height:"100%", width:"99%", background:"linear-gradient(90deg,#86EFAC,#34D399)", borderRadius:3 }}/>
+              </div>
+            </div>
+          </div>
+          <Card style={{ padding:16 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:C.ink, marginBottom:12, display:"flex", alignItems:"center", gap:7 }}><I n="doc" s={14} col={C.s700} sw={2}/>Extracted Data</div>
+            {flds.map(([label,key]) => (
+              <div key={key} style={{ marginBottom:11 }}>
+                <div style={{ fontSize:10, fontWeight:700, color:C.ink4, letterSpacing:1, textTransform:"uppercase", marginBottom:4 }}>{label}</div>
+                <div style={{ fontSize:13, fontWeight:600, color:C.ink, padding:"7px 11px", background:fields[key]?C.s50:C.bg, borderRadius:8, border:`1px solid ${fields[key]?C.s200:C.border}`, minHeight:34, display:"flex", alignItems:"center", transition:"all .3s" }}>
+                  {fields[key] ? <span>{fields[key]}</span> : <span style={{ color:C.ink4, fontSize:12 }}>—</span>}
+                </div>
+              </div>
+            ))}
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════
+   P9 — GIS MAP
+══════════════════════════════════════════════════════ */
+const P9 = () => {
+  const [selected, setSelected] = useState(null);
+  const dists = [
+    { id:"BBR", name:"Bhubaneswar", cx:244, cy:192, r:14, pct:87, amt:"₹42.8 Cr", fill:C.s700 },
+    { id:"CTC", name:"Cuttack", cx:270, cy:160, r:12, pct:74, amt:"₹38.2 Cr", fill:C.s600 },
+    { id:"PRI", name:"Puri", cx:288, cy:220, r:11, pct:62, amt:"₹22.1 Cr", fill:C.amber },
+    { id:"KPT", name:"Koraput", cx:178, cy:280, r:13, pct:45, amt:"₹18.4 Cr", fill:C.red },
+    { id:"SBP", name:"Sambalpur", cx:170, cy:136, r:12, pct:68, amt:"₹31.5 Cr", fill:C.amber },
+    { id:"BPR", name:"Berhampur", cx:260, cy:278, r:11, pct:58, amt:"₹24.8 Cr", fill:C.amber },
+    { id:"BLS", name:"Balasore", cx:316, cy:96, r:10, pct:71, amt:"₹19.2 Cr", fill:C.s500 },
+  ];
+  const sel = dists.find(d=>d.id===selected);
+  const select = (d) => { setSelected(d.id); toast(`${d.name}: ${d.amt} — ${d.pct}% utilized`,"info"); };
+  return (
+    <div>
+      <PageHeader num="09" tag="GIS Analytics · Q3 2025" tagIcon="pin" title="GIS-Based Fund Tracking Map" desc="Interactive Odisha map showing fund utilization by district. Click SVG district circles or sidebar cards to see details." priority="future"/>
+      <div style={{ padding:20 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 210px", gap:14 }}>
+          <div style={{ background:C.white, borderRadius:16, border:`1px solid ${C.border}`, overflow:"hidden", position:"relative", minHeight:360 }}>
+            <div style={{ position:"absolute", inset:0, background:`linear-gradient(135deg,${C.s50},${C.s100})` }}/>
+            <svg viewBox="0 0 500 360" style={{ position:"absolute", inset:0, width:"100%", height:"100%" }}>
+              <path d="M120,60 L200,40 L285,50 L345,80 L382,140 L372,205 L352,265 L302,325 L242,345 L182,325 L142,275 L100,205 L88,140 Z" fill={C.s100} stroke={C.s300} strokeWidth="2"/>
+              {dists.map(d=>(
+                <g key={d.id} style={{ cursor:"pointer" }} onClick={()=>select(d)}>
+                  <circle cx={d.cx} cy={d.cy} r={d.r+4} fill="rgba(14,165,233,.1)"/>
+                  <circle cx={d.cx} cy={d.cy} r={d.r} fill={d.fill} opacity={selected===d.id?1:.82} stroke={selected===d.id?"white":"none"} strokeWidth="2"/>
+                  <text x={d.cx} y={d.cy+4} textAnchor="middle" fill="white" fontSize="9" fontWeight="700" fontFamily="Roboto,sans-serif">{d.id}</text>
+                </g>
+              ))}
+              <text x="250" y="355" textAnchor="middle" fill={C.ink4} fontSize="10" fontFamily="Roboto,sans-serif">Odisha — Interactive Fund Utilization Map</text>
+            </svg>
+            {sel && (
+              <div style={{ position:"absolute", top:12, right:12, background:"rgba(255,255,255,.97)", borderRadius:10, padding:"10px 13px", fontSize:12, boxShadow:`0 4px 14px rgba(14,165,233,.12)`, border:`1px solid ${C.border}` }}>
+                <div style={{ fontWeight:700, color:C.ink, marginBottom:4 }}>{sel.name}</div>
+                <div style={{ fontWeight:900, fontSize:16, color:sel.pct>70?C.s700:sel.pct>55?C.amber:C.red }}>{sel.amt}</div>
+                <Prog pct={sel.pct} color={sel.pct>70?`linear-gradient(90deg,${C.s700},${C.s400})`:sel.pct>55?`linear-gradient(90deg,${C.amber},#FCD34D)`:`linear-gradient(90deg,${C.red},#F87171)`}/>
+                <div style={{ fontSize:10, color:sel.pct>70?C.s700:sel.pct>55?C.amber:C.red, fontWeight:700, marginTop:4 }}>{sel.pct}% utilized</div>
+              </div>
+            )}
+            <div style={{ position:"absolute", bottom:12, left:12, background:"rgba(255,255,255,.96)", borderRadius:9, padding:"9px 12px", border:`1px solid ${C.border}` }}>
+              {[[C.s700,"High (>70%)"],[C.amber,"Medium (55-70%)"],[C.red,"Low (<55%)"]].map(([c,l])=>(
+                <div key={l} style={{ display:"flex", alignItems:"center", gap:7, fontSize:10, color:C.ink3, marginBottom:3 }}>
+                  <div style={{ width:9, height:9, borderRadius:"50%", background:c, flexShrink:0 }}/>{l}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ overflowY:"auto" }}>
+            <div style={{ fontSize:12, fontWeight:700, color:C.ink, marginBottom:8 }}>Districts</div>
+            {dists.map(d => (
+              <div key={d.id} onClick={()=>select(d)} style={{ background:C.white, borderRadius:12, border:`1.5px solid ${selected===d.id?C.s500:C.border}`, padding:10, cursor:"pointer", transition:"all .2s", marginBottom:8, background:selected===d.id?C.s50:C.white }}>
+                <div style={{ fontSize:12, fontWeight:700, color:C.ink }}>{d.name}</div>
+                <div style={{ fontSize:14, fontWeight:900, color:d.fill, margin:"2px 0" }}>{d.amt}</div>
+                <Prog pct={d.pct} color={`linear-gradient(90deg,${d.fill},${d.fill})`}/>
+                <div style={{ fontSize:10, color:d.fill, fontWeight:700, marginTop:3 }}>{d.pct}%</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════
+   P10 — NOTIFICATIONS
+══════════════════════════════════════════════════════ */
+const P10 = () => {
+  const [notifs, setNotifs] = useState([
+    { id:1, title:"🔴 Critical Fraud Alert — Bill IFM-8842", desc:"Duplicate detected. ₹4,25,000 auto-held. Risk: 94. Immediate review required.", time:"2 min ago", type:"red", unread:true },
+    { id:2, title:"⏱ SLA Warning — 3 Bills", desc:"Bills 9021, 9022, 9023 approaching 24h deadline. Approve in 2 hours.", time:"18 min ago", type:"amber", unread:true },
+    { id:3, title:"📊 AI Forecast Ready — Q4 2025", desc:"89% confidence. ₹38 Cr surplus projected — reallocation advised.", time:"1 hour ago", type:"sky", unread:true },
+    { id:4, title:"✅ 14 Bills Auto-Approved", desc:"Low-risk batch processed. ₹12.4 Cr approved for payment.", time:"3 hours ago", type:"green", unread:false },
+  ]);
+  const [prefs, setPrefs] = useState({ Push:true, SMS:true, WhatsApp:true, Email:true, SLA:true, Reports:true, FraudOnly:false, Silent:false });
+  const markRead = (id) => setNotifs(ns=>ns.map(n=>n.id===id?{...n,unread:false}:n));
+  const markAll = () => { setNotifs(ns=>ns.map(n=>({...n,unread:false}))); toast("All notifications marked as read","success"); };
+  const addNotif = () => {
+    const t = [["🔔 New AI Alert","PWD shows unusual spending pattern","warning"],["📊 Weekly Report Ready","November 2025 summary available","sky"],["⚡ Voice Command Success","Field officer approved bill via voice","green"]];
+    const r = t[Math.floor(Math.random()*t.length)];
+    const id = Date.now();
+    setNotifs(ns=>[{id,title:r[0],desc:r[1],time:"Just now",type:r[2],unread:true},...ns]);
+    toast(r[0],"info");
+  };
+  const unread = notifs.filter(n=>n.unread).length;
+  const colors = { red:"#FEE2E2", amber:"#FEF3C7", sky:C.s100, green:"#D1FAE5" };
+  const textColors = { red:C.red, amber:C.amber, sky:C.s700, green:C.green };
+  return (
+    <div>
+      <PageHeader num="10" tag="Notifications · Q2 2025" tagIcon="bell" title="Smart Notification System" desc="Context-aware multi-channel alerts — push, SMS, WhatsApp, email. Toggle channels, mark read, simulate new alerts." priority="high"/>
+      <div style={{ padding:20 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 260px", gap:14 }}>
+          <div>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12, flexWrap:"wrap", gap:8 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:C.ink, display:"flex", alignItems:"center", gap:8 }}>Inbox {unread>0&&<Badge color="red">{unread} Unread</Badge>}</div>
+              <div style={{ display:"flex", gap:6 }}>
+                <Btn sm variant="secondary" onClick={markAll}>Mark All Read</Btn>
+                <Btn sm onClick={addNotif}>Simulate New</Btn>
+              </div>
+            </div>
+            {notifs.map(n => (
+              <div key={n.id} onClick={()=>markRead(n.id)} style={{ display:"flex", alignItems:"flex-start", gap:11, padding:12, background:C.white, border:`1px solid ${C.border}`, borderLeft:n.unread?`3px solid ${C.s500}`:undefined, borderRadius:13, cursor:"pointer", transition:"all .2s", marginBottom:8 }}
+                onMouseEnter={e=>e.currentTarget.style.borderLeftColor=C.s400} onMouseLeave={e=>{ if(n.unread)e.currentTarget.style.borderLeftColor=C.s500; }}>
+                <div style={{ width:36, height:36, borderRadius:10, background:colors[n.type], flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <I n="bell" s={16} col={textColors[n.type]} sw={2}/>
+                </div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:C.ink }}>{n.title}</div>
+                  <div style={{ fontSize:11, color:C.ink3, marginTop:2, lineHeight:1.5 }}>{n.desc}</div>
+                  <div style={{ fontSize:10, color:C.ink4, marginTop:4 }}>{n.time}</div>
+                </div>
+                {n.unread && <div style={{ width:8, height:8, borderRadius:"50%", background:C.s500, flexShrink:0, marginTop:4 }}/>}
+              </div>
+            ))}
+          </div>
+          <Card style={{ padding:14 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:C.ink, marginBottom:12 }}>Notification Preferences</div>
+            {Object.entries(prefs).map(([k,v]) => (
+              <div key={k} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 0", borderBottom:`1px solid ${C.border}` }}>
+                <span style={{ fontSize:12, color:C.ink2 }}>{k}</span>
+                <Toggle on={v} onChange={()=>{ setPrefs(p=>({...p,[k]:!p[k]})); toast(`${k}: ${!v?"ON":"OFF"}`,"info"); }}/>
+              </div>
+            ))}
+            <Btn style={{ marginTop:12, width:"100%", justifyContent:"center" }} onClick={()=>toast("Preferences saved!","success")}>Save Preferences</Btn>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════
+   P11 — ZERO-CLICK REPORTS
+══════════════════════════════════════════════════════ */
+const P11 = () => {
+  const [rptType, setRptType] = useState("CAG Annual Statement");
+  const [steps, setSteps] = useState([]);
+  const [generating, setGenerating] = useState(false);
+  const generate = (type) => {
+    setGenerating(true); setSteps([]);
+    const ss = ["Fetching transaction data...","Running AI analysis...","Building report structure...","Generating charts & visuals...","Applying digital signature...","Report ready ✓"];
+    ss.forEach((s,i) => setTimeout(()=>{ setSteps(g=>[...g,s]); if(i===ss.length-1){ setGenerating(false); toast(`${type} ready to download!`,"success"); } }, (i+1)*550));
+  };
+  return (
+    <div>
+      <PageHeader num="11" tag="Reports · Q2 2025" tagIcon="download" title="Zero-Click Report Generation" desc="AI auto-generates CAG, PAC, Finance Dept compliance reports. Click any card or Generate with AI to watch live step-by-step." priority="critical"/>
+      <div style={{ padding:20 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:16 }}>
+          {[{t:"Monthly Expenditure",freq:"Auto · 1st of month",icon:"bar",last:"✓ Nov 2025"},{t:"CAG Compliance",freq:"Auto · Quarterly",icon:"shield",last:"✓ Sep 2025"},{t:"Budget Utilization",freq:"Auto · Weekly",icon:"activity",last:"✓ 14 Nov 2025"}].map(r=>(
+            <div key={r.t} onClick={()=>generate(r.t)} style={{ background:C.white, borderRadius:14, border:`1px solid ${C.border}`, padding:15, cursor:"pointer", transition:"all .2s" }}
+              onMouseEnter={e=>{ e.currentTarget.style.borderColor=C.s400; e.currentTarget.style.boxShadow=`0 4px 14px rgba(14,165,233,.1)`; }}
+              onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.boxShadow=""; }}>
+              <IcoBox icon={r.icon} size={44} br={12} style={{ marginBottom:11 }}/>
+              <div style={{ fontSize:13, fontWeight:700, color:C.ink, marginBottom:3 }}>{r.t}</div>
+              <div style={{ fontSize:10, color:C.ink4 }}>{r.freq}</div>
+              <div style={{ fontSize:11, color:C.green, marginTop:5, fontWeight:600 }}>{r.last}</div>
+            </div>
+          ))}
+        </div>
+        <Card style={{ padding:20 }}>
+          <div style={{ fontSize:14, fontWeight:700, color:C.ink, marginBottom:14 }}>Generate Custom AI Report</div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
+            <div>
+              <label style={{ fontSize:11, fontWeight:700, color:C.ink2, marginBottom:5, display:"block" }}>Report Type</label>
+              <select value={rptType} onChange={e=>setRptType(e.target.value)} style={{ border:`1.5px solid ${C.border}`, borderRadius:10, padding:"8px 12px", fontFamily:"Roboto,sans-serif", fontSize:12, color:C.ink, background:C.white, outline:"none", width:"100%" }}>
+                {["CAG Annual Statement","Department Audit Report","Fraud Summary Report","Budget vs Actual Analysis","District Fund Report","PAC Compliance Report"].map(o=><option key={o}>{o}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize:11, fontWeight:700, color:C.ink2, marginBottom:5, display:"block" }}>Period</label>
+              <select style={{ border:`1.5px solid ${C.border}`, borderRadius:10, padding:"8px 12px", fontFamily:"Roboto,sans-serif", fontSize:12, color:C.ink, background:C.white, outline:"none", width:"100%" }}>
+                {["November 2025","Q3 FY 2025-26","FY 2025-26 YTD","FY 2024-25 Annual"].map(o=><option key={o}>{o}</option>)}
+              </select>
+            </div>
+          </div>
+          <Btn onClick={()=>generate(rptType)} disabled={generating}>
+            {generating?<span style={{ width:12,height:12,borderRadius:"50%",border:"2px solid rgba(255,255,255,.3)",borderTopColor:"white",display:"inline-block",animation:"spin .6s linear infinite" }}/>:<I n="play" s={14}/>}
+            {generating?"Generating...":"Generate with AI"}
+          </Btn>
+          {steps.length>0 && (
+            <div style={{ background:C.s50, borderRadius:12, padding:14, marginTop:14 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.ink, marginBottom:10 }}>Generating: {rptType}</div>
+              {steps.map((s,i)=>(
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:9, padding:"7px 0", borderBottom:i<steps.length-1?`1px solid ${C.border}`:"none", animation:"fadeUp .2s ease" }}>
+                  <div style={{ width:22, height:22, borderRadius:"50%", background:C.green, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><I n="check" s={10} sw={2.5}/></div>
+                  <span style={{ fontSize:12, color:C.ink2 }}>{s}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════
+   P12 — MOBILE PWA
+══════════════════════════════════════════════════════ */
+const P12 = () => (
+  <div>
+    <PageHeader num="12" tag="Mobile · Q3 2025" tagIcon="phone" title="Offline-First Progressive Web App" desc="Mobile IFMS for field officers in tribal districts with zero connectivity. Biometric login, push alerts, background sync." priority="high"/>
+    <div style={{ padding:20 }}>
+      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"center", gap:32, flexWrap:"wrap" }}>
+        {/* Phone mockup */}
+        <div style={{ width:200, background:C.s900, borderRadius:28, overflow:"hidden", boxShadow:`0 20px 60px rgba(12,26,46,.4)`, flexShrink:0 }}>
+          <div style={{ height:22, background:C.s900, display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <div style={{ width:70, height:14, background:"black", borderRadius:10 }}/>
+          </div>
+          <div style={{ background:C.bg, padding:13 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:11 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:C.ink }}>IFMS Mobile</div>
+              <span style={{ display:"inline-flex", alignItems:"center", gap:4, background:"#FEF3C7", color:"#92400E", fontSize:8, fontWeight:700, padding:"2px 7px", borderRadius:30, border:"1px solid #FCD34D" }}><I n="wifi" s={8} col="#92400E" sw={2}/>Offline</span>
+            </div>
+            <div style={{ background:`linear-gradient(135deg,${C.s800},${C.s500})`, borderRadius:11, padding:11, marginBottom:9 }}>
+              <div style={{ fontSize:9, color:"rgba(255,255,255,.65)", marginBottom:2 }}>Fund Balance</div>
+              <div style={{ fontSize:20, fontWeight:900, color:"white" }}>₹42.8 Cr</div>
+              <div style={{ fontSize:8, color:"rgba(255,255,255,.6)" }}>Health Dept · FY 2025-26</div>
+              <div style={{ display:"flex", gap:6, marginTop:8 }}>
+                {[["doc","Bill"],["check","Approve"],["refresh","Sync(3)"]].map(([ic,l])=>(
+                  <div key={l} onClick={()=>toast(`Opening ${l}...`,"info")} style={{ flex:1, background:"rgba(255,255,255,.15)", borderRadius:7, padding:6, textAlign:"center", cursor:"pointer" }}>
+                    <div style={{ width:13, height:13, margin:"0 auto 2px" }}><I n={ic} s={13}/></div>
+                    <span style={{ fontSize:7, color:"white" }}>{l}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ background:C.white, borderRadius:10, padding:9, marginBottom:9, border:`1px solid ${C.border}` }}>
+              <div style={{ fontSize:9, fontWeight:700, color:C.ink, marginBottom:5 }}>Pending (12)</div>
+              <div style={{ fontSize:9, color:C.ink3 }}>IFM-9042 · ₹4.25L · Health</div>
+              <div style={{ fontSize:9, color:C.ink3, marginTop:2 }}>IFM-9041 · ₹12.8L · PWD</div>
+              <div style={{ fontSize:9, color:C.s600, marginTop:3, fontWeight:600 }}>+10 more →</div>
+            </div>
+          </div>
+          <div style={{ height:46, background:C.white, borderTop:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"space-around" }}>
+            {[["grid","Home",true],["doc","Bills",false],["bar","Reports",false],["user","Profile",false]].map(([ic,l,a])=>(
+              <div key={l} onClick={()=>toast(`Opening ${l}...`,"info")} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:2, cursor:"pointer", opacity:a?1:.5 }}>
+                <I n={ic} s={13} col={a?C.s700:C.ink4} sw={2}/>
+                <span style={{ fontSize:8, fontWeight:600, color:a?C.s700:C.ink4 }}>{l}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Features */}
+        <div style={{ display:"flex", flexDirection:"column", gap:12, maxWidth:300 }}>
+          {[{icon:"wifi",t:"Offline-First Architecture",d:"Works in zero connectivity. Syncs when signal returns. Built for Koraput, Malkangiri tribal areas."},{icon:"lock",t:"Biometric Authentication",d:"Fingerprint & Face ID. Touch thumb to approve payment. No password needed in field."},{icon:"bell",t:"Push Notifications",d:"Instant SLA alerts, fraud warnings, even when app is closed."},{icon:"refresh",t:"Background Sync",d:"Queues offline actions & syncs in correct order. Zero data loss guarantee."}].map(f=>(
+            <div key={f.t} style={{ display:"flex", alignItems:"flex-start", gap:12, padding:13, background:C.white, borderRadius:12, border:`1px solid ${C.border}` }}>
+              <IcoBox icon={f.icon} size={36} br={10} style={{ flexShrink:0 }}/>
+              <div><div style={{ fontSize:12, fontWeight:700, color:C.ink }}>{f.t}</div><div style={{ fontSize:11, color:C.ink3, marginTop:2 }}>{f.d}</div></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+/* ══════════════════════════════════════════════════════
+   P13 — VOICE NAVIGATION
+══════════════════════════════════════════════════════ */
+const P13 = () => {
+  const [listening, setListening] = useState(false);
+  const [lang, setLang] = useState("en");
+  const [transcript, setTranscript] = useState("Click the microphone orb or a command chip to start voice navigation");
+  const [result, setResult] = useState("IFMS Voice AI — Odia & English supported");
+  const [history, setHistory] = useState([
+    { cmd:'"Show dashboard"', res:"Navigated to Command Center", time:"10:42 AM" },
+    { cmd:'"Health Q3 balance?"', res:"₹42.8 Cr — 67% utilized", time:"10:38 AM" },
+    { cmd:'"ବିଲ୍ ଅନୁମୋଦନ" (Odia)', res:"Bill IFM-9041 approved ✓", time:"10:31 AM" },
+  ]);
+  const cmds = { "show pending bills for today":"14 pending bills found (₹2.4 Cr) — navigating now", "health department fund balance":"Health Dept: ₹42.8 Cr · 67% utilized this quarter", "approve bill number 9042":"Bill IFM-9042 approved ✓ — payment queued", "run q3 budget forecast":"Q3 forecast running — ₹284 Cr projected, 89% confidence", "flag bill 8842 for fraud review":"Bill 8842 flagged ✓ — auto-hold applied", "generate november monthly report":"Generating November 2025 report — 6 steps ✓" };
+  const speak = (cmd) => {
+    setListening(true);
+    setTranscript(`"${cmd}"`);
+    setResult("Processing...");
+    setTimeout(() => {
+      setListening(false);
+      const res = cmds[cmd.toLowerCase()] || "Command executed — navigating to relevant section";
+      setResult(res);
+      setHistory(h => [{ cmd:`"${cmd}"`, res, time:"now" }, ...h.slice(0,4)]);
+      toast(`Voice: ${cmd.substring(0,35)}...`,"success");
+    }, 1400);
+  };
+  return (
+    <div>
+      <PageHeader num="13" tag="Voice AI · Q3 2025" tagIcon="mic" title="Voice Navigation (Odia + English)" desc="India's first government finance voice AI. Click orb or command chips. Supports full Odia language navigation." priority="future"/>
+      <div style={{ padding:20 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 280px", gap:14 }}>
+          <div style={{ background:`linear-gradient(160deg,${C.s900},${C.s800},${C.s700})`, borderRadius:20, padding:32, display:"flex", flexDirection:"column", alignItems:"center", gap:20, position:"relative", overflow:"hidden" }}>
+            {[160,260,360,460].map(s=><div key={s} style={{ position:"absolute", width:s, height:s, borderRadius:"50%", border:"1px solid rgba(255,255,255,.07)", pointerEvents:"none" }}/>)}
+            <div onClick={()=>speak("show pending bills for today")} style={{ width:84, height:84, borderRadius:"50%", background:"rgba(255,255,255,.12)", border:"2px solid rgba(255,255,255,.25)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"all .3s", position:"relative", zIndex:2, boxShadow:`0 0 0 8px rgba(255,255,255,.06),0 0 0 16px rgba(255,255,255,.03)`, animation:listening?"glow 1.5s infinite":"none" }}
+              onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.2)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.12)"}>
+              <I n="mic" s={34}/>
+            </div>
+            {listening && (
+              <div style={{ display:"flex", alignItems:"center", gap:3, height:28, position:"relative", zIndex:2 }}>
+                {[10,18,26,20,14,22,16].map((h,i)=>(
+                  <div key={i} style={{ width:3, borderRadius:3, background:"rgba(255,255,255,.7)", height:h, animation:`wv .7s ${i*.1}s ease-in-out infinite` }}/>
+                ))}
+              </div>
+            )}
+            <div style={{ fontSize:10, fontWeight:600, color:"rgba(255,255,255,.6)", letterSpacing:1, textTransform:"uppercase", position:"relative", zIndex:2 }}>
+              {listening?"LISTENING...":"TAP ORB TO SPEAK"}
+            </div>
+            <div style={{ background:"rgba(255,255,255,.1)", border:"1px solid rgba(255,255,255,.18)", borderRadius:12, padding:"12px 18px", fontSize:13, color:"white", textAlign:"center", position:"relative", zIndex:2, width:"100%", maxWidth:380, minHeight:52, display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1.6 }}>
+              {transcript.startsWith('"') ? <><em style={{ fontStyle:"normal", color:C.s300, fontWeight:600 }}>{transcript}</em></> : transcript}
+            </div>
+            <div style={{ background:"rgba(255,255,255,.07)", border:"1px solid rgba(255,255,255,.12)", borderRadius:12, padding:"11px 17px", fontSize:12, color:"rgba(255,255,255,.7)", textAlign:"center", position:"relative", zIndex:2, width:"100%", maxWidth:380, lineHeight:1.6 }}>
+              {result}
+            </div>
+            <div style={{ display:"flex", gap:8, position:"relative", zIndex:2 }}>
+              {[["en","English"],["or","ଓଡ଼ିଆ"]].map(([l,label])=>(
+                <button key={l} onClick={()=>{ setLang(l); toast(l==="en"?"English mode":"Odia mode ✓","info"); }} style={{ padding:"7px 18px", borderRadius:30, border:`1.5px solid ${lang===l?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`, background:lang===l?"rgba(255,255,255,.22)":"rgba(255,255,255,.1)", fontSize:12, fontWeight:600, color:lang===l?"white":"rgba(255,255,255,.7)", cursor:"pointer", fontFamily:"Roboto,sans-serif" }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:7, justifyContent:"center", position:"relative", zIndex:2 }}>
+              {["Show pending bills for today","Health Department fund balance","Approve bill number 9042","Run Q3 budget forecast","Flag bill 8842 for fraud review","Generate November monthly report"].map(c=>(
+                <div key={c} onClick={()=>speak(c)} style={{ background:"rgba(255,255,255,.1)", border:"1px solid rgba(255,255,255,.18)", borderRadius:8, padding:"7px 13px", fontSize:11, color:"rgba(255,255,255,.8)", fontWeight:500, cursor:"pointer", transition:"all .2s", fontFamily:"Roboto,sans-serif" }}
+                  onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.2)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.1)"}>
+                  {c}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            <Card style={{ padding:14 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.ink, marginBottom:10 }}>Command History</div>
+              {history.map((h,i)=>(
+                <div key={i} style={{ display:"flex", gap:9, padding:"7px 0", borderBottom:`1px solid ${C.border}` }}>
+                  <div style={{ width:24, height:24, borderRadius:7, background:`linear-gradient(135deg,${C.s700},${C.s500})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><I n="mic" s={11}/></div>
+                  <div>
+                    <div style={{ fontSize:12, fontWeight:600, color:C.ink }}>{h.cmd}</div>
+                    <div style={{ fontSize:11, color:C.ink3 }}>{h.res}</div>
+                    <div style={{ fontSize:10, color:C.ink4 }}>{h.time}</div>
+                  </div>
+                </div>
+              ))}
+            </Card>
+            <Card style={{ padding:14 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.ink, marginBottom:10 }}>Voice Stats</div>
+              {[["Recognition Rate","97.3%"],["Odia Accuracy","94.1%"],["Avg Response","0.8s"],["Commands Today","142"]].map(([k,v])=>(
+                <div key={k} style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderBottom:`1px solid ${C.border}` }}>
+                  <span style={{ fontSize:11, color:C.ink3 }}>{k}</span>
+                  <span style={{ fontSize:12, fontWeight:700, color:C.s700 }}>{v}</span>
+                </div>
+              ))}
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════
+   P14 — ACADEMY
+══════════════════════════════════════════════════════ */
+const P14 = () => {
+  const [xp, setXp] = useState(1240);
+  const [progress, setProgress] = useState([72,0,100,0]);
+  const courses = [
+    { t:"Budget Management Basics", sub:"Foundation · 45 mins", icon:"money", xpGain:150, grad:`linear-gradient(135deg,${C.s800},${C.s500})` },
+    { t:"Fraud Detection Workshop", sub:"Advanced · 60 mins", icon:"shield", xpGain:200, grad:`linear-gradient(135deg,${C.s900},${C.s700})` },
+    { t:"Voice Commands Mastery", sub:"Intermediate · 30 mins", icon:"mic", xpGain:120, grad:`linear-gradient(135deg,${C.s700},${C.s400})` },
+    { t:"GIS Fund Tracking", sub:"Intermediate · 40 mins", icon:"pin", xpGain:180, grad:`linear-gradient(135deg,${C.s600},${C.s400})` },
+  ];
+  const enroll = (idx) => {
+    if(progress[idx]===100){ toast(`${courses[idx].t} already completed!`,"info"); return; }
+    const newP = [...progress];
+    newP[idx] = 100;
+    setProgress(newP);
+    setXp(x => x+courses[idx].xpGain);
+    toast(`+${courses[idx].xpGain} XP — ${courses[idx].t} completed!`,"success");
+  };
+  const badges = [{ on:true, icon:"check", tip:"First Steps" },{ on:true, icon:"doc", tip:"Bill Master" },{ on:progress[2]===100, icon:"mic", tip:"Voice Pro" },{ on:progress[1]===100, icon:"shield", tip:"Fraud Hunter" },{ on:false, icon:"cpu", tip:"AI Expert" },{ on:false, icon:"star", tip:"Top Officer" }];
+  return (
+    <div>
+      <PageHeader num="14" tag="Training · Q3 2025" tagIcon="book" title="IFMS Academy — Gamified Training" desc="Earn XP, unlock badges, and compete on the leaderboard. Click courses to complete them and earn points." priority="high"/>
+      <div style={{ padding:20 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 250px", gap:14 }}>
+          <div>
+            {courses.map((c,i) => (
+              <div key={i} onClick={()=>enroll(i)} style={{ background:C.white, borderRadius:14, border:`1px solid ${C.border}`, overflow:"hidden", cursor:"pointer", transition:"all .2s", marginBottom:10 }}
+                onMouseEnter={e=>{ e.currentTarget.style.borderColor=C.s400; e.currentTarget.style.boxShadow=`0 4px 14px rgba(14,165,233,.1)`; }}
+                onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.boxShadow=""; }}>
+                <div style={{ height:72, position:"relative", display:"flex", alignItems:"center", padding:"0 16px", gap:12, overflow:"hidden", background:c.grad }}>
+                  <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle,rgba(255,255,255,.1) 1px,transparent 1px)", backgroundSize:"14px 14px" }}/>
+                  <div style={{ width:42, height:42, borderRadius:12, background:"rgba(255,255,255,.2)", border:"1px solid rgba(255,255,255,.28)", display:"flex", alignItems:"center", justifyContent:"center", position:"relative", zIndex:1, flexShrink:0 }}><I n={c.icon} s={20}/></div>
+                  <div style={{ position:"relative", zIndex:1 }}>
+                    <div style={{ fontSize:14, fontWeight:700, color:"white" }}>{c.t}</div>
+                    <div style={{ fontSize:11, color:"rgba(255,255,255,.65)" }}>{c.sub} · +{c.xpGain} XP</div>
+                  </div>
+                </div>
+                <div style={{ padding:"12px 15px" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:C.ink3, marginBottom:4 }}>
+                    <span>Progress</span><span>{progress[i]}%</span>
+                  </div>
+                  <Prog pct={progress[i]} color={progress[i]===100?"linear-gradient(90deg,#059669,#10B981)":undefined}/>
+                  <div style={{ display:"flex", gap:10, marginTop:8, alignItems:"center" }}>
+                    <Badge color={progress[i]===100?"green":progress[i]>0?"amber":"sky"}>{progress[i]===100?"Completed ✓":progress[i]>0?"In Progress":"Start Now"}</Badge>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            <div style={{ background:`linear-gradient(135deg,${C.s800},${C.s500})`, borderRadius:14, padding:16, color:"white" }}>
+              <div style={{ fontSize:10, opacity:.7, marginBottom:4 }}>Your XP Points</div>
+              <div style={{ fontSize:36, fontWeight:900, lineHeight:1 }}>{xp.toLocaleString()}</div>
+              <div style={{ fontSize:11, opacity:.7, marginTop:4 }}>Level 4 · Senior Learner</div>
+              <div style={{ height:7, background:"rgba(255,255,255,.2)", borderRadius:4, marginTop:10, overflow:"hidden" }}>
+                <div style={{ height:"100%", width:`${Math.min((xp/3000)*100,100)}%`, background:"linear-gradient(90deg,#86EFAC,#34D399)", borderRadius:4, transition:"width 1s ease" }}/>
+              </div>
+            </div>
+            <Card style={{ padding:14 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.ink, marginBottom:10 }}>Badges</div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                {badges.map((b,i) => (
+                  <div key={i} onClick={()=>b.on&&toast(`Badge: ${b.tip}!`,"success")} title={b.tip} style={{ width:44, height:44, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", cursor:b.on?"pointer":"default", background:b.on?`linear-gradient(135deg,${C.s700},${C.s500})`:C.border, opacity:b.on?1:.5, boxShadow:b.on?`0 2px 10px rgba(14,165,233,.4)`:"none", transition:"transform .2s" }}
+                    onMouseEnter={e=>b.on&&(e.currentTarget.style.transform="scale(1.1)")} onMouseLeave={e=>e.currentTarget.style.transform=""}>
+                    <I n={b.icon} s={18}/>
+                  </div>
+                ))}
+              </div>
+            </Card>
+            <Card style={{ padding:14 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.ink, marginBottom:10 }}>Leaderboard</div>
+              {[["1",C.amber,"RK","Rajesh K.","2,840"],["2",C.ink3,"PM","Priya M.","2,120"],["3","#B45309","AS","Amit S.","1,890"],["4",C.s700,"You","You",xp.toLocaleString()],["5",C.ink4,"SN","Seema N.","980"]].map(([rank,c,av,name,pts])=>(
+                <div key={rank} style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 0", borderBottom:`1px solid ${C.border}`, background:name==="You"?C.s50:"transparent", borderRadius:name==="You"?8:"none" }}>
+                  <span style={{ fontSize:12, fontWeight:900, color:c, width:16 }}>{rank}</span>
+                  <div style={{ width:26, height:26, borderRadius:"50%", background:name==="You"?`linear-gradient(135deg,${C.s700},${C.s500})`:`linear-gradient(135deg,${C.s400},${C.s200})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, color:name==="You"?"white":C.s900 }}>{av}</div>
+                  <span style={{ flex:1, fontSize:12, fontWeight:600, color:C.ink }}>{name}</span>
+                  <span style={{ fontSize:11, fontWeight:700, color:C.s700 }}>{pts}</span>
+                </div>
+              ))}
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════
+   P15 — OPEN API HUB
+══════════════════════════════════════════════════════ */
+const P15 = () => {
+  const [activeEP, setActiveEP] = useState(0);
+  const endpoints = [
+    { m:"GET", p:"/budget/balance", code:`curl -X GET 'https://api.ifms.odisha.gov.in/v1/budget/balance'\n  -H 'Authorization: Bearer eyJhbGci...'`, resp:`{\n  "status": "success",\n  "data": {\n    "total_budget": 500000000,\n    "utilized": 216000000,\n    "remaining": 284000000,\n    "utilization_pct": 43.2\n  }\n}` },
+    { m:"POST", p:"/bills", code:`curl -X POST 'https://api.ifms.odisha.gov.in/v1/bills'\n  -d '{"dept":"health","amount":425000}'`, resp:`{\n  "status": "created",\n  "bill_id": "IFM-9045",\n  "stage": "AI_VALIDATION"\n}` },
+    { m:"GET", p:"/fraud/alerts", code:`curl -X GET 'https://api.ifms.odisha.gov.in/v1/fraud/alerts?severity=critical'\n  -H 'Authorization: Bearer ...'`, resp:`{\n  "alerts": [\n    {"id": "IFM-8842", "risk": 94, "status": "HOLD"},\n    {"id": "IFM-9011", "risk": 71, "status": "REVIEW"}\n  ]\n}` },
+    { m:"POST", p:"/forecast", code:`curl -X POST 'https://api.ifms.odisha.gov.in/v1/forecast'\n  -d '{"dept":"all","period":"Q4-2025"}'`, resp:`{\n  "confidence": 89,\n  "projected_spend": 284000000,\n  "surplus": 38000000,\n  "model": "time-series-v2"\n}` },
+    { m:"POST", p:"/reports/generate", code:`curl -X POST 'https://api.ifms.odisha.gov.in/v1/reports/generate'\n  -d '{"type":"CAG_ANNUAL","fy":"2025-26"}'`, resp:`{\n  "status": "processing",\n  "report_id": "RPT-2025-0441",\n  "eta": "30s"\n}` },
+    { m:"GET", p:"/departments", code:`curl -X GET 'https://api.ifms.odisha.gov.in/v1/departments'\n  -H 'Authorization: Bearer ...'`, resp:`{\n  "departments": [\n    {"id": "HEALTH", "utilized_pct": 67},\n    {"id": "EDUCATION", "utilized_pct": 82}\n  ],\n  "total": 28\n}` },
+  ];
+  const mc = { GET:{bg:"#D1FAE5",c:"#065F46"}, POST:{bg:"#DBEAFE",c:"#1E40AF"}, PUT:{bg:"#FEF3C7",c:"#92400E"} };
+  const ep = endpoints[activeEP];
+  return (
+    <div>
+      <PageHeader num="15" tag="API · Q4 2025" tagIcon="link" title="Open API & Integration Hub" desc="REST API connecting IFMS with PFMS, HRMS, GST Portal, Bank systems. Click endpoints to see live code and responses." priority="future"/>
+      <div style={{ padding:20 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"200px 1fr", gap:14 }}>
+          <Card style={{ padding:14, height:"fit-content" }}>
+            <div style={{ fontSize:12, fontWeight:700, color:C.ink, marginBottom:10 }}>Endpoints</div>
+            {endpoints.map((e,i) => (
+              <div key={i} onClick={()=>{ setActiveEP(i); toast(`${e.m} ${e.p} called — 200 OK · 124ms`,"success"); }} style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 8px", borderRadius:8, cursor:"pointer", background:activeEP===i?C.s100:"transparent", transition:"background .15s", marginBottom:4 }}>
+                <span style={{ fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:4, background:mc[e.m]?.bg, color:mc[e.m]?.c, minWidth:34, textAlign:"center" }}>{e.m}</span>
+                <span style={{ fontFamily:"Roboto Mono,monospace", fontSize:10, color:C.ink2 }}>{e.p}</span>
+              </div>
+            ))}
+          </Card>
+          <div>
+            <Card style={{ overflow:"hidden", marginBottom:14 }}>
+              <div style={{ background:C.s900, padding:"10px 15px", display:"flex", alignItems:"center", gap:10 }}>
+                <span style={{ fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:4, background:mc[ep.m]?.bg, color:mc[ep.m]?.c }}>{ep.m}</span>
+                <span style={{ fontFamily:"Roboto Mono,monospace", fontSize:11, color:"rgba(255,255,255,.8)" }}>https://api.ifms.odisha.gov.in/v1{ep.p}</span>
+              </div>
+              <div style={{ background:"#0F172A", padding:14, overflowX:"auto" }}>
+                <pre style={{ fontFamily:"Roboto Mono,monospace", fontSize:11, color:"#E2E8F0", lineHeight:1.7, margin:0 }}>{ep.code}</pre>
+              </div>
+              <div style={{ padding:14 }}>
+                <div style={{ display:"inline-flex", alignItems:"center", gap:6, background:"#D1FAE5", color:"#065F46", fontSize:11, fontWeight:700, padding:"4px 12px", borderRadius:30, marginBottom:10 }}>
+                  <I n="check" s={12} col="#065F46" sw={2.5}/>200 OK · 124ms
+                </div>
+                <pre style={{ fontFamily:"Roboto Mono,monospace", fontSize:11, color:C.ink2, background:C.s50, padding:12, borderRadius:8, overflowX:"auto", lineHeight:1.7, margin:0 }}>{ep.resp}</pre>
+              </div>
+            </Card>
+            <div style={{ fontSize:12, fontWeight:700, color:C.ink, marginBottom:8 }}>Connected Systems</div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+              {[["PFMS",true],["HRMS",true],["GST Portal",false],["e-Procurement",true],["Bank APIs",true],["Bhuvan GIS",true],["NIC Gateway",true]].map(([s,on])=>(
+                <div key={s} onClick={()=>toast(`${s} — ${on?"Connected · active":"15 min cache"}`,"success")} style={{ display:"flex", alignItems:"center", gap:7, background:C.white, border:`1.5px solid ${C.border}`, borderRadius:10, padding:"7px 12px", fontSize:11, fontWeight:600, color:C.ink2, cursor:"pointer", transition:"all .2s" }}
+                  onMouseEnter={e=>{ e.currentTarget.style.borderColor=C.s400; e.currentTarget.style.color=C.s700; }}
+                  onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.color=C.ink2; }}>
+                  <div style={{ width:7, height:7, borderRadius:"50%", background:on?C.green:C.amber }}/>
+                  {s}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════
+   P16 — SENTIMENT ANALYTICS
+══════════════════════════════════════════════════════ */
+const P16 = () => {
+  const [nps, setNps] = useState(68);
+  const heatColors = ["#E0F2FE","#7DD3FC","#0EA5E9","#0369A1","#0C4A6E"];
+  const heatData = useRef(Array.from({length:35},()=>Math.floor(Math.random()*100)));
+  const getColor = v => heatColors[Math.floor(v/21)];
+  return (
+    <div>
+      <PageHeader num="16" tag="Analytics · Q3 2025" tagIcon="eye" title="Sentiment & Usability Analytics" desc="Heatmaps, NPS surveys, UX health scoring. Hover heatmap cells to see click frequency. Click Run NPS for live results." priority="high"/>
+      <div style={{ padding:20 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 250px", gap:14 }}>
+          <div>
+            <Card style={{ padding:16, marginBottom:14 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.ink, marginBottom:4 }}>Interaction Heatmap — Bill Submission Screen</div>
+              <div style={{ fontSize:11, color:C.ink3, marginBottom:10 }}>Hover cells to see click frequency · Darker = more interactions</div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4 }}>
+                {heatData.current.map((v,i) => (
+                  <div key={i} title={`${v}% interaction`} onClick={()=>toast(`Interaction: ${v}%`,"info")} style={{ height:32, borderRadius:5, background:getColor(v), cursor:"pointer", transition:"transform .2s" }}
+                    onMouseEnter={e=>e.currentTarget.style.transform="scale(1.15)"} onMouseLeave={e=>e.currentTarget.style.transform=""}/>
+                ))}
+              </div>
+              <div style={{ display:"flex", gap:8, alignItems:"center", marginTop:8 }}>
+                <span style={{ fontSize:10, color:C.ink3 }}>Less</span>
+                {heatColors.map(c=><div key={c} style={{ width:14, height:14, borderRadius:3, background:c }}/>)}
+                <span style={{ fontSize:10, color:C.ink3 }}>More</span>
+              </div>
+            </Card>
+            <Card style={{ padding:16 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.ink, marginBottom:12, textAlign:"center" }}>Net Promoter Score</div>
+              <div style={{ fontSize:56, fontWeight:900, color:C.s700, lineHeight:1, textAlign:"center" }}>{nps}</div>
+              <div style={{ fontSize:11, color:C.ink3, textAlign:"center", marginTop:4, marginBottom:12 }}>Good · Industry avg: 42</div>
+              {[["Promoters (9-10)","72%",C.green],["Passive (7-8)","24%",C.amber],["Detractors (0-6)","4%",C.red]].map(([l,p,c])=>(
+                <div key={l} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:7 }}>
+                  <div style={{ width:80, fontSize:11, color:C.ink3 }}>{l}</div>
+                  <div style={{ flex:1, height:7, background:C.s100, borderRadius:7, overflow:"hidden" }}>
+                    <div style={{ height:"100%", width:p, background:c, borderRadius:7 }}/>
+                  </div>
+                  <span style={{ fontSize:11, fontWeight:700, color:C.ink, minWidth:30, textAlign:"right" }}>{p}</span>
+                </div>
+              ))}
+              <Btn sm style={{ marginTop:10 }} onClick={()=>{ const n=60+Math.floor(Math.random()*30); setNps(n); toast(`NPS Survey: ${n} — ${n>70?"Excellent!":"Good"}`,"success"); }}>Run NPS Survey</Btn>
+            </Card>
+          </div>
+          <div>
+            <Card style={{ padding:14, marginBottom:12 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.ink, marginBottom:12 }}>UX Health Score</div>
+              <div style={{ width:96, height:96, borderRadius:"50%", background:`conic-gradient(${C.s500} 0% 74%,${C.border} 74% 100%)`, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 14px" }}>
+                <div style={{ width:74, height:74, borderRadius:"50%", background:C.white, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+                  <div style={{ fontSize:22, fontWeight:900, color:C.s700, lineHeight:1 }}>74</div>
+                  <div style={{ fontSize:9, color:C.ink3 }}>/ 100</div>
+                </div>
+              </div>
+              {[["Task Completion","87%",undefined],["Avg Session","8.4 min",undefined],["Error Rate","3.2%",`linear-gradient(90deg,${C.amber},#FCD34D)`],["Mobile Usage","41%",undefined]].map(([l,v,c])=>(
+                <div key={l} style={{ marginBottom:8 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:C.ink3, marginBottom:3 }}><span>{l}</span><span style={{ fontWeight:700, color:C.s700 }}>{v}</span></div>
+                  <Prog pct={parseInt(v)} color={c}/>
+                </div>
+              ))}
+            </Card>
+            <Card style={{ padding:14 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.ink, marginBottom:10 }}>Recent Sessions</div>
+              {[["DDO Officer","8.4 min · Bill submission"],["Treasury Officer","12.1 min · Rage click: GST field ⚠️"],["Finance Secretary","3.2 min · Dashboard only"]].map(([r,d],i)=>(
+                <div key={i} onClick={()=>toast(`Loading session for ${r}...`,"info")} style={{ padding:8, borderRadius:9, cursor:"pointer", border:`1px solid ${C.border}`, marginBottom:6, transition:"border-color .15s" }}
+                  onMouseEnter={e=>e.currentTarget.style.borderColor=C.s300} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
+                  <div style={{ fontSize:12, fontWeight:700, color:C.ink }}>{r}</div>
+                  <div style={{ fontSize:11, color:C.ink3, marginTop:1 }}>{d}</div>
+                </div>
+              ))}
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════
+   P17 — BLOCKCHAIN
+══════════════════════════════════════════════════════ */
+const P17 = () => {
+  const [blocks, setBlocks] = useState([
+    { num:10041, label:"Latest", hash:"0x7f2a...9c4d", bill:"IFM-9042", amt:"₹4,25,000", dept:"Health", status:"Approved", time:"2025-11-14 11:24" },
+    { num:10040, hash:"0x1a2b...5c6d", bill:"IFM-9041", amt:"₹12,80,000", dept:"PWD", status:"Auto-Approved", time:"2025-11-14 10:58" },
+    { num:10039, hash:"0x3c4d...7e8f", bill:"IFM-9040", amt:"₹8,60,000", dept:"Education", status:"FRAUD HOLD", time:"2025-11-14 09:44" },
+  ]);
+  const [hashInput, setHashInput] = useState("");
+  const [verifyResult, setVerifyResult] = useState(null);
+  const addBlock = () => {
+    const newBlock = { num:blocks[0].num+1, label:"Latest", hash:`0x${Math.random().toString(16).substr(2,4)}...${Math.random().toString(16).substr(2,4)}`, bill:`IFM-${9045+blocks.length}`, amt:`₹${(Math.random()*10+1).toFixed(1)}L`, dept:["Health","Education","PWD","Agriculture"][Math.floor(Math.random()*4)], status:"Approved", time:new Date().toISOString().slice(0,16).replace("T"," ") };
+    const updated = [newBlock,...blocks.map(b=>({...b,label:undefined}))];
+    setBlocks(updated);
+    toast(`Block #${newBlock.num} added — Immutable ✓`,"success");
+  };
+  const verify = () => {
+    if(!hashInput.trim()){ toast("Enter a hash to verify","warning"); return; }
+    toast("Verifying on blockchain...","info");
+    setTimeout(()=>{ setVerifyResult(hashInput.length>8?"valid":"invalid"); toast(hashInput.length>8?"Hash verified — immutable record ✓":"Hash not found","info"); }, 1000);
+  };
+  return (
+    <div>
+      <PageHeader num="17" tag="Blockchain · Q4 2025" tagIcon="block" title="Blockchain Audit Ledger" desc="Immutable transaction log for every IFMS entry. Click blocks to inspect. Add new blocks. Verify transaction hashes." priority="future"/>
+      <div style={{ padding:20 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 260px", gap:14 }}>
+          <div>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:10, fontWeight:600, color:C.green }}>
+                <span style={{ width:6, height:6, borderRadius:"50%", background:C.green, display:"inline-block", animation:"pulse 1.5s infinite" }}/>LIVE Feed
+              </div>
+              <Btn sm onClick={addBlock}><I n="block" s={12}/>Add Block</Btn>
+            </div>
+            {blocks.map((b,i) => (
+              <div key={b.num}>
+                <div onClick={()=>toast(`Block #${b.num} verified ✓ Hash: ${b.hash}`,"success")} style={{ background:C.white, borderRadius:14, border:`1px solid ${C.border}`, overflow:"hidden", cursor:"pointer", transition:"all .2s", marginBottom:0 }}
+                  onMouseEnter={e=>{ e.currentTarget.style.borderColor=C.s400; e.currentTarget.style.boxShadow=`0 4px 14px rgba(14,165,233,.1)`; }}
+                  onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.boxShadow=""; }}>
+                  <div style={{ background:`linear-gradient(135deg,${C.s900},${C.s700})`, padding:"9px 15px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                    <span style={{ fontSize:12, fontWeight:700, color:"white" }}>Block #{b.num}{b.label?` · ${b.label}`:""}</span>
+                    <span style={{ fontFamily:"Roboto Mono,monospace", fontSize:9, color:"rgba(255,255,255,.6)" }}>{b.hash}</span>
+                  </div>
+                  <div style={{ padding:"11px 15px" }}>
+                    {[["Bill ID",b.bill],["Amount",b.amt],["Department",b.dept],["Status",b.status],["Timestamp",b.time]].map(([k,v])=>(
+                      <div key={k} style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", borderBottom:`1px solid ${C.border}` }}>
+                        <span style={{ fontSize:11, color:C.ink3 }}>{k}</span>
+                        <span style={{ fontSize:11, fontWeight:700, color:v==="FRAUD HOLD"?C.red:v.includes("Approved")?C.green:C.ink }}>{v}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {i < blocks.length-1 && (
+                  <div style={{ display:"flex", justifyContent:"center", height:18, margin:"2px 0" }}>
+                    <div style={{ width:2, height:18, background:`linear-gradient(to bottom,${C.s300},${C.s500})`, borderRadius:2 }}/>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          <div>
+            <Card style={{ padding:14, marginBottom:12 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.ink, marginBottom:10 }}>Verify Transaction Hash</div>
+              <input value={hashInput} onChange={e=>setHashInput(e.target.value)} placeholder="Paste tx hash..." style={{ fontFamily:"Roboto Mono,monospace", fontSize:11, border:`1.5px solid ${C.border}`, borderRadius:10, padding:"8px 10px", color:C.ink, background:C.white, outline:"none", width:"100%", marginBottom:8 }}/>
+              <Btn style={{ width:"100%", justifyContent:"center" }} onClick={verify}>Verify on Chain</Btn>
+              {verifyResult && (
+                <div style={{ marginTop:10, padding:10, borderRadius:10, background:verifyResult==="valid"?"#D1FAE5":"#FEE2E2", border:`1px solid ${verifyResult==="valid"?"#6EE7B7":"#FCA5A5"}` }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:verifyResult==="valid"?"#065F46":"#991B1B" }}>
+                    {verifyResult==="valid"?"✓ Hash Verified — Immutable Record Found":"✗ Hash Not Found in Chain"}
+                  </div>
+                </div>
+              )}
+            </Card>
+            <Card style={{ padding:14 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.ink, marginBottom:10 }}>Chain Stats</div>
+              {[["Total Blocks",(blocks[0]?.num||10041).toLocaleString()],["Total Value","₹2,840 Cr"],["Avg Block Time","3.2s"],["Chain Integrity","100% ✓"],["CAG Access","Live Read ✓"]].map(([k,v])=>(
+                <div key={k} style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderBottom:`1px solid ${C.border}` }}>
+                  <span style={{ fontSize:11, color:C.ink3 }}>{k}</span>
+                  <span style={{ fontSize:12, fontWeight:700, color:v.includes("✓")?C.green:C.s700 }}>{v}</span>
+                </div>
+              ))}
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════
+   P18 — ACCESSIBILITY
+══════════════════════════════════════════════════════ */
+const P18 = () => {
+  const [fontSize, setFontSize] = useState(14);
+  const [controls, setControls] = useState({ "Screen Reader":true, "Keyboard Only":true, "High Contrast":false, "Colour Blind Mode":false, "Reduce Motion":false, "Odia Language":true, "Focus Indicators":true });
+  const checks = [
+    {s:"pass",t:"Colour contrast ratio 4.5:1 (AA)"},
+    {s:"pass",t:"All interactive elements keyboard accessible"},
+    {s:"pass",t:"ARIA labels on all SVG icons"},
+    {s:"pass",t:"NVDA / JAWS screen reader support"},
+    {s:"warn",t:"Some charts need text alternatives"},
+    {s:"pass",t:"Language declared: lang='en' / 'or'"},
+    {s:"fail",t:"2 form fields missing error descriptions"},
+    {s:"pass",t:"Focus indicators visible on all elements"},
+  ];
+  const sc = { pass:C.green, warn:C.amber, fail:C.red };
+  return (
+    <div>
+      <PageHeader num="18" tag="Accessibility · Q2 2025" tagIcon="clock" title="Inclusive Accessibility Overhaul" desc="WCAG 2.1 AA, screen reader support, Odia localization. Toggle controls to see settings. Adjust font size live." priority="high"/>
+      <div style={{ padding:20 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+          <div>
+            <Card style={{ padding:16, marginBottom:12 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.ink, marginBottom:12 }}>WCAG 2.1 AA Checker</div>
+              <div style={{ width:96, height:96, borderRadius:"50%", background:`conic-gradient(${C.green} 0% 87%,${C.border} 87% 100%)`, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 14px" }}>
+                <div style={{ width:74, height:74, borderRadius:"50%", background:C.white, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+                  <div style={{ fontSize:22, fontWeight:900, color:C.green, lineHeight:1 }}>87</div>
+                  <div style={{ fontSize:9, color:C.ink3 }}>/ 100</div>
+                </div>
+              </div>
+              {checks.map((c,i) => (
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:8, borderRadius:10, background:C.s50, marginBottom:6 }}>
+                  <div style={{ width:22, height:22, borderRadius:"50%", background:sc[c.s], display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <I n={c.s==="pass"?"check":c.s==="fail"?"x":"warning"} s={9} sw={2.5}/>
+                  </div>
+                  <span style={{ fontSize:12, color:C.ink2 }}>{c.t}</span>
+                </div>
+              ))}
+            </Card>
+            <Card style={{ padding:14 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.ink, marginBottom:10 }}>Contrast Demo</div>
+              {[[C.s900,"white","White on Sky-900","15.8:1"],[C.s700,"white","White on Sky-700","7.2:1"],[C.s500,"white","White on Sky-500","3.1:1 ✗"],[C.s100,C.s900,"Sky-900 on Sky-100","14.2:1"]].map(([bg,tc,l,r])=>(
+                <div key={l} style={{ padding:"8px 12px", background:bg, borderRadius:8, marginBottom:6, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <span style={{ fontSize:12, fontWeight:500, color:tc }}>{l}</span>
+                  <span style={{ fontSize:11, fontWeight:700, color:tc, fontFamily:"Roboto Mono,monospace" }}>{r}</span>
+                </div>
+              ))}
+            </Card>
+          </div>
+          <div>
+            <Card style={{ padding:16 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.ink, marginBottom:14 }}>Accessibility Controls</div>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0", borderBottom:`1px solid ${C.border}` }}>
+                <div><div style={{ fontSize:12, fontWeight:600, color:C.ink }}>Font Size</div></div>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <button onClick={()=>{ const n=Math.max(10,fontSize-1); setFontSize(n); document.body.style.fontSize=n+"px"; toast(`Font: ${n}px`,"info"); }} style={{ width:26, height:26, borderRadius:7, border:`1.5px solid ${C.border}`, background:C.white, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:700, color:C.s700 }}>−</button>
+                  <span style={{ fontSize:12, fontWeight:700, color:C.ink, minWidth:36, textAlign:"center" }}>{fontSize}px</span>
+                  <button onClick={()=>{ const n=Math.min(22,fontSize+1); setFontSize(n); document.body.style.fontSize=n+"px"; toast(`Font: ${n}px`,"info"); }} style={{ width:26, height:26, borderRadius:7, border:`1.5px solid ${C.border}`, background:C.white, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:700, color:C.s700 }}>+</button>
+                </div>
+              </div>
+              {Object.entries(controls).map(([k,v]) => (
+                <div key={k} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0", borderBottom:`1px solid ${C.border}` }}>
+                  <span style={{ fontSize:12, fontWeight:600, color:C.ink }}>{k}</span>
+                  <Toggle on={v} onChange={()=>{ setControls(c=>({...c,[k]:!c[k]})); toast(`${k}: ${!v?"ON":"OFF"}`,"info"); }}/>
+                </div>
+              ))}
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════
+   MAIN APP
+══════════════════════════════════════════════════════ */
+function App() {
+  const [page, setPage] = useState("p0");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const navigate = useCallback((id) => {
+    setPage(id);
+    setSidebarOpen(false);
+    window.scrollTo && window.scrollTo(0,0);
+  }, []);
+
+  const pages = { p0:<P0 navigate={navigate}/>, p1:<P1/>, p2:<P2/>, p3:<P3/>, p4:<P4/>, p5:<P5/>, p6:<P6/>, p7:<P7/>, p8:<P8/>, p9:<P9/>, p10:<P10/>, p11:<P11/>, p12:<P12/>, p13:<P13/>, p14:<P14/>, p15:<P15/>, p16:<P16/>, p17:<P17/>, p18:<P18/> };
+
+  const navGroups = [
+    { label:"Overview", items:[{ id:"p0", icon:"grid", label:"Command Center" }] },
+    { label:"AI Modules", items:[{ id:"p1",icon:"chat",label:"01 · Budget Copilot" },{ id:"p5",icon:"shield",label:"05 · Fraud Detection",badge:"3",badgeRed:true },{ id:"p6",icon:"activity",label:"06 · Forecasting" },{ id:"p8",icon:"doc",label:"08 · OCR Engine" },{ id:"p13",icon:"mic",label:"13 · Voice Navigation" }] },
+    { label:"Finance Ops", items:[{ id:"p3",icon:"bar",label:"03 · Analytics" },{ id:"p4",icon:"flow",label:"04 · Workflow" },{ id:"p11",icon:"download",label:"11 · Reports" },{ id:"p9",icon:"pin",label:"09 · GIS Fund Map" }] },
+    { label:"UX & Design", items:[{ id:"p2",icon:"layers",label:"02 · Design System" },{ id:"p7",icon:"user",label:"07 · Role-Based UI" },{ id:"p12",icon:"phone",label:"12 · Mobile PWA" },{ id:"p18",icon:"clock",label:"18 · Accessibility" },{ id:"p16",icon:"eye",label:"16 · Sentiment" }] },
+    { label:"Infra & Gov", items:[{ id:"p10",icon:"bell",label:"10 · Notifications" },{ id:"p14",icon:"book",label:"14 · IFMS Academy" },{ id:"p15",icon:"link",label:"15 · API Hub" },{ id:"p17",icon:"block",label:"17 · Blockchain" }] },
+  ];
+
+  const pageTitles = { p0:"Command Center",p1:"AI Budget Copilot",p2:"Design System",p3:"Analytics Dashboard",p4:"Smart Workflow",p5:"Fraud Detection",p6:"Predictive Forecasting",p7:"Role-Based UI",p8:"OCR Engine",p9:"GIS Fund Map",p10:"Notifications",p11:"Zero-Click Reports",p12:"Mobile PWA",p13:"Voice Navigation",p14:"IFMS Academy",p15:"Open API Hub",p16:"Sentiment Analytics",p17:"Blockchain Ledger",p18:"Accessibility" };
+
+  return (
+    <div style={{ display:"flex", height:"100vh", overflow:"hidden", fontFamily:"Roboto,sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Roboto+Mono:wght@400;500&display=swap');
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Roboto',sans-serif; }
+        ::-webkit-scrollbar { width:4px; height:4px; }
+        ::-webkit-scrollbar-track { background:transparent; }
+        ::-webkit-scrollbar-thumb { background:#BAE6FD; border-radius:4px; }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes fadeInRight { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+        @keyframes spin { to{transform:rotate(360deg)} }
+        @keyframes wv { 0%,100%{transform:scaleY(.3)} 50%{transform:scaleY(1)} }
+        @keyframes glow { 0%,100%{box-shadow:0 0 0 0 rgba(14,165,233,.4)} 50%{box-shadow:0 0 0 14px rgba(14,165,233,0)} }
+        select { cursor:pointer; }
+        @media(max-width:768px){
+          .sidebar-wrap { position:fixed!important; z-index:100; transform:${sidebarOpen?"translateX(0)":"translateX(-100%)"}!important; transition:transform .3s!important; }
+        }
+      `}</style>
+
+      {/* Overlay */}
+      {sidebarOpen && <div onClick={()=>setSidebarOpen(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.5)", zIndex:99 }}/>}
+
+      {/* Sidebar */}
+      <aside className="sidebar-wrap" style={{ width:260, flexShrink:0, background:`linear-gradient(175deg,${C.s900},${C.s800} 55%,${C.s700})`, display:"flex", flexDirection:"column", zIndex:50 }}>
+        <div style={{ padding:"18px 14px 14px", borderBottom:"1px solid rgba(255,255,255,.1)", display:"flex", alignItems:"center", gap:10 }}>
+          <div style={{ width:34, height:34, borderRadius:9, background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.2)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><I n="cpu" s={17}/></div>
+          <div><div style={{ fontSize:14, fontWeight:700, color:"white" }}>OIFMS 3.0</div><div style={{ fontSize:9, color:"rgba(255,255,255,.45)", letterSpacing:1.5, textTransform:"uppercase" }}>Innovation Portal</div></div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"8px 10px" }}>
+          {navGroups.map(g => (
+            <div key={g.label}>
+              <div style={{ fontSize:9, fontWeight:700, letterSpacing:2, textTransform:"uppercase", color:"rgba(255,255,255,.35)", padding:"12px 8px 5px" }}>{g.label}</div>
+              {g.items.map(item => (
+                <div key={item.id} onClick={()=>navigate(item.id)} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 10px", borderRadius:11, cursor:"pointer", transition:"all .2s", color:page===item.id?"white":"rgba(255,255,255,.6)", background:page===item.id?"rgba(255,255,255,.16)":"transparent", marginBottom:1, position:"relative", fontSize:12, fontWeight:500 }}>
+                  {page===item.id && <div style={{ position:"absolute", left:0, top:"50%", transform:"translateY(-50%)", width:3, height:"60%", background:"white", borderRadius:"0 3px 3px 0" }}/>}
+                  <div style={{ width:18, height:18, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><I n={item.icon} s={16} col={page===item.id?"white":"rgba(255,255,255,.6)"} sw={2}/></div>
+                  <span style={{ flex:1 }}>{item.label}</span>
+                  {item.badge && <span style={{ background:item.badgeRed?C.red:"rgba(255,255,255,.18)", color:"white", fontSize:9, fontWeight:700, padding:"1px 6px", borderRadius:30 }}>{item.badge}</span>}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div style={{ padding:"12px 10px", borderTop:"1px solid rgba(255,255,255,.1)" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:9, padding:"9px 10px", borderRadius:11, background:"rgba(255,255,255,.08)", cursor:"pointer" }}>
+            <div style={{ width:32, height:32, borderRadius:"50%", background:`linear-gradient(135deg,${C.s400},${C.s200})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:C.s900, flexShrink:0 }}>SN</div>
+            <div><div style={{ fontSize:12, fontWeight:600, color:"white" }}>Subhendu Nayak</div><div style={{ fontSize:10, color:"rgba(255,255,255,.45)" }}>UI/UX Designer</div></div>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main */}
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        {/* Topbar */}
+        <div style={{ height:56, flexShrink:0, background:C.white, borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", padding:"0 16px", gap:12, boxShadow:`0 1px 6px rgba(14,165,233,.06)` }}>
+          <button onClick={()=>setSidebarOpen(s=>!s)} style={{ width:34, height:34, borderRadius:8, border:"none", background:C.s50, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+            <I n="menu" s={18} col={C.s700} sw={2}/>
+          </button>
+          <div style={{ fontSize:15, fontWeight:700, color:C.ink, flex:1, minWidth:0, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{pageTitles[page]||"OIFMS 3.0"}</div>
+          <div style={{ display:"flex", alignItems:"center", gap:8, background:C.s50, border:`1.5px solid ${C.border}`, borderRadius:30, padding:"6px 13px", maxWidth:280, flex:1 }}>
+            <I n="search" s={14} col={C.ink4} sw={2}/>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search modules..." style={{ border:"none", background:"transparent", fontFamily:"Roboto,sans-serif", fontSize:12, color:C.ink, outline:"none", flex:1 }}/>
+          </div>
+          <button onClick={()=>{ navigate("p10"); toast("Opening notifications","info"); }} style={{ width:34, height:34, borderRadius:8, border:"none", background:C.s50, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", position:"relative", flexShrink:0 }}>
+            <I n="bell" s={16} col={C.s700} sw={2}/>
+            <div style={{ position:"absolute", top:6, right:6, width:7, height:7, borderRadius:"50%", background:C.red, border:"2px solid white" }}/>
+          </button>
+          <button onClick={()=>toast("Settings panel","info")} style={{ width:34, height:34, borderRadius:8, border:"none", background:C.s50, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+            <I n="settings" s={16} col={C.s700} sw={2}/>
+          </button>
+        </div>
+
+        {/* Page content */}
+        <div style={{ flex:1, overflowY:"auto" }}>
+          <div key={page} style={{ animation:"fadeUp .25s ease" }}>
+            {pages[page] || <div style={{ padding:40, textAlign:"center", color:C.ink3 }}>Page coming soon</div>}
+          </div>
+        </div>
+      </div>
+
+      <Toast/>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  </script>
+</body>
+</html>
